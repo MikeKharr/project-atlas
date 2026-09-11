@@ -192,6 +192,26 @@ test('находка конфигурации — код 1, ничего не з
   }
 })
 
+test('под GitHub Actions находка — аннотация ::error с файлом и строкой', () => {
+  const fx = copyFixture()
+  const out = scratch()
+  try {
+    editConfig(fx.root, (c) => {
+      c.docs.histroy = 'history'
+    })
+    const r = spawnSync(process.execPath, [BUILD, '--root', fx.root, '--out', out], {
+      cwd: PKG,
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_ACTIONS: 'true' },
+    })
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /^::error file=atlas\.config\.json,line=\d+::конфигурация: /m)
+  } finally {
+    fx.cleanup()
+    rmSync(out, { recursive: true, force: true })
+  }
+})
+
 test('разбор аргументов', () => {
   assert.deepEqual(parseArgs(['--root', 'r', '--config', 'c.json', '--out', 'o', '--check']), {
     check: true,
