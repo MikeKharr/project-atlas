@@ -10,7 +10,10 @@ import { FIXTURE, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
 // проектирования (метка каталога выхода, пересечение со входами, realpath).
 
 const BUILD = join(PKG, 'build.js')
-const cli = (args, cwd = PKG) => spawnSync(process.execPath, [BUILD, ...args], { cwd, encoding: 'utf8' })
+// Без GITHUB_ACTIONS: на раннере находки печатаются аннотациями `::error`,
+// а тесты сверяют обычный формат `файл:строка: сообщение`.
+const cli = (args, cwd = PKG) =>
+  spawnSync(process.execPath, [BUILD, ...args], { cwd, encoding: 'utf8', env: { ...process.env, GITHUB_ACTIONS: '' } })
 
 const scratch = () => {
   mkdirSync(TEMP, { recursive: true })
