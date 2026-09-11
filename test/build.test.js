@@ -10,7 +10,10 @@ import { FIXTURE, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
 // проектирования (метка каталога выхода, пересечение со входами, realpath).
 
 const BUILD = join(PKG, 'build.js')
-const cli = (args, cwd = PKG) => spawnSync(process.execPath, [BUILD, ...args], { cwd, encoding: 'utf8' })
+// Без GITHUB_ACTIONS: на раннере находки печатаются аннотациями `::error`,
+// а тесты сверяют обычный формат `файл:строка: сообщение`.
+const cli = (args, cwd = PKG) =>
+  spawnSync(process.execPath, [BUILD, ...args], { cwd, encoding: 'utf8', env: { ...process.env, GITHUB_ACTIONS: '' } })
 
 const scratch = () => {
   mkdirSync(TEMP, { recursive: true })
@@ -183,6 +186,26 @@ test('находка конфигурации — код 1, ничего не з
     assert.equal(r.status, 1)
     assert.match(r.stderr, /atlas\.config\.json:\d+: конфигурация: `docs\.histroy` — неизвестный ключ/)
     assert.equal(existsSync(join(out, 'graph.json')), false)
+  } finally {
+    fx.cleanup()
+    rmSync(out, { recursive: true, force: true })
+  }
+})
+
+test('под GitHub Actions находка — аннотация ::error с файлом и строкой', () => {
+  const fx = copyFixture()
+  const out = scratch()
+  try {
+    editConfig(fx.root, (c) => {
+      c.docs.histroy = 'history'
+    })
+    const r = spawnSync(process.execPath, [BUILD, '--root', fx.root, '--out', out], {
+      cwd: PKG,
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_ACTIONS: 'true' },
+    })
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /^::error file=atlas\.config\.json,line=\d+::конфигурация: /m)
   } finally {
     fx.cleanup()
     rmSync(out, { recursive: true, force: true })
