@@ -61,9 +61,10 @@ reference.
   the ai-advent example. The guard is the only place that touches the file
   system for inputs: `lstat` per component, `realpath` under the root, deny
   list at every read (spec §3.3).
-- Vocabulary is the module `lib/vocab/ru.js` — constants, no `language`
-  selector in format 1; `markdown.js`, `extract.js`, `fired.js`, `vault.js`
-  take it as an argument.
+- Vocabulary is a module of constants per language (`lib/vocab/ru.js`,
+  `lib/vocab/en.js`), selected by `language` in the config, default `ru`;
+  `markdown.js`, `extract.js`, `fired.js`, `vault.js` take it as an
+  argument. `en` is T13, after the first commit.
 - Project values reach the page through `<meta>` tags, not `graph.json`.
 - Port, do not rewrite: the layout, compose parser, fired rule, texts and
   vault code move as they are; only literals become parameters. Rewriting
@@ -75,7 +76,7 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
 
 ### Phase 0 — skeleton
 
-- [ ] **T0. Copy the package.** Copy `atlas/{build.js,lib,web,test,README.md,package.json}` from the source checkout into the root of this repository (`lib/`, `web/`, `test/`, `build.js`). Do not copy `Dockerfile` and `Caddyfile` — they are ai-advent-2026 delivery, not the tool. Add `.gitignore` (`dist/`, `temp/`, `node_modules/`), `package.json` (`name: project-atlas`, `type: module`, `engines.node >=22`, scripts `build`, `check`, `test`; no `license` field — the owner decides). First step after the copy, before running anything: redirect `ROOT` and `TEMP` in `test/helpers.js` to this repository (package root and `temp/`) — as copied they resolve into the source checkout, and a test run would read and write there.
+- [ ] **T0. Copy the package.** Copy `atlas/{build.js,lib,web,test,README.md,package.json}` from the source checkout into the root of this repository (`lib/`, `web/`, `test/`, `build.js`). Do not copy `Dockerfile` and `Caddyfile` — they are ai-advent-2026 delivery, not the tool. Add `.gitignore` (`dist/`, `temp/`, `node_modules/`), `package.json` (`name: project-atlas`, `type: module`, `engines.node >=22`, scripts `build`, `check`, `test`; `license: MIT` and a `LICENSE` file — the owner's decision of 2026-09-12). First step after the copy, before running anything: redirect `ROOT` and `TEMP` in `test/helpers.js` to this repository (package root and `temp/`) — as copied they resolve into the source checkout, and a test run would read and write there.
   - Verify: `test/helpers.js` holds no path outside this repository; `node --test test/*.test.js` runs and fails only on inputs missing under the new `ROOT` — record the list of failing files, they are the ones to port in T7/T8.
   - Files: many, mechanical. Size M.
 
@@ -137,6 +138,12 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
 
 - [ ] **T12. First commit and repository.** `git init`, single first commit `chore: extract atlas from MikeKharr/ai-advent-2026 at 1d882f4` (no `Co-Authored-By` trailer). The public repository is created by the orchestrator after `reviewer` + `compliance` consensus (owner's decision); default branch `main`, branch protection as in the source project (PR required, CI required).
 
+### Phase 4 — English vocabulary (owner's decision of 2026-09-12: now)
+
+- [ ] **T13. `lib/vocab/en.js` and `language`.** Add the `en` module with the values of spec §8, key for key with `ru.js`; `lib/config.js` accepts `language` (`ru` | `en`, absent → `ru`, anything else → class-1 finding) and hands the selected module to the modules that take a vocabulary. Test fixture `test/fixtures/minimal-en/` — the English twin of the minimal fixture (same files and graph, English headings, statuses, labels and one gate trace with an English mark and one cancelled by a negation) with `"language": "en"` in its config.
+  - Acceptance: `node build.js --root test/fixtures/minimal-en --check` exits 0 and its graph has the same node and edge counts as the `ru` fixture; a config with `"language": "de"` is a finding; T7 stays green with `language` absent and with `"language": "ru"` added to the example config (byte equality unchanged); `grep -rn "Статус\|Владеет\|Заменяет\|вето" lib/*.js` shows nothing outside `lib/vocab/ru.js`.
+  - Files: `lib/vocab/en.js`, `lib/config.js`, fixture directory, `test/config.test.js`, `test/extract.test.js`. Size M.
+
 ### Checkpoint C — done
 
 - [ ] Mandatory criterion passes locally and in the `compat` job.
@@ -155,12 +162,9 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
 | The overlay of ai-advent at `1d882f4` gains a field later and the example stops matching | Low | the example is pinned to `1d882f4`; migrating ai-advent is a separate task |
 | Publishing widens what is public | Low | the code and docs are already public in ai-advent-2026; only the spec, plan, fixture and example config are new text — T11 checks them |
 
-## Open questions for the owner (not blocking the plan)
+## Owner's decisions (2026-09-12)
 
-1. Add the `language` config key and the `en` vocabulary (spec §14) —
-   when? Needed for any non-Russian project; a file, not a format change.
-   Now, or when a second real project appears?
-2. License of `project-atlas` — none until the owner decides;
-   `package.json` has no `license` field.
-3. Rename node type `day` → `unit` (format 2) at the same time as the
-   ai-advent migration, or keep `day` indefinitely?
+1. The `language` key and the `en` vocabulary — now (spec §8, T13).
+2. License of `project-atlas` — MIT (T0).
+3. Rename node type `day` → `unit` (format 2) — at the ai-advent
+   migration, which is the next task after this plan.
