@@ -18,14 +18,15 @@ export const FIXTURE_EN = join(PKG, 'test/fixtures/minimal-en')
 export const EXAMPLE_CONFIG = join(PKG, 'examples/ai-advent-2026/atlas.config.json')
 
 /**
- * Копия минимальной фикстуры во временном корне: тесты ломают входы и
- * подкладывают секреты, не трогая фикстуру. Возвращает корень, путь к
- * конфигурации и функцию уборки.
+ * Копия фикстуры во временном корне: тесты ломают входы и подкладывают
+ * секреты, не трогая саму фикстуру. Возвращает корень, путь к конфигурации и
+ * функцию уборки.
+ * @param {string} from какую фикстуру копировать; по умолчанию — русская
  */
-export function copyFixture() {
+export function copyFixture(from = FIXTURE) {
   mkdirSync(TEMP, { recursive: true })
   const root = mkdtempSync(join(TEMP, 'fixture-'))
-  cpSync(FIXTURE, root, { recursive: true })
+  cpSync(from, root, { recursive: true })
   return { root, config: join(root, 'atlas.config.json'), cleanup: () => rmSync(root, { recursive: true, force: true }) }
 }
 
