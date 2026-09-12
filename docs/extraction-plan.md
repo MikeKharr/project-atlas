@@ -1,8 +1,8 @@
 # Extraction plan: `atlas/` → `MikeKharr/project-atlas`
 
 For the `backend` role. Spec: `docs/input-spec.md`. Source: `atlas/` in
-`MikeKharr/ai-advent-2026` at commit `1d882f4`
-(a local checkout, `<ai-advent checkout>` below). Target: this directory,
+`MikeKharr/ai-advent-2026` at the source commit, named in this repository's
+first commit (a local checkout, `<ai-advent checkout>` below). Target: this directory,
 `<project-atlas>`, a new public repository with a clean history.
 
 The source repository is **not touched** by this plan: its `atlas/`, CI and
@@ -11,7 +11,7 @@ tool is a separate task (options in the ADR).
 
 ## Acceptance criterion (mandatory)
 
-On the clean checkout of ai-advent-2026 at `1d882f4`:
+On the clean checkout of ai-advent-2026 at the source commit:
 
 ```sh
 cd <ai-advent checkout> && git status --porcelain   # must be empty
@@ -104,7 +104,7 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
   - Acceptance: `test/extract.test.js` passes on the minimal fixture; the compatibility test (T7) is the real gate.
   - Files: `lib/extract.js`, `test/extract.test.js`. Size S in files, the largest diff of the plan.
 
-- [ ] **T5. `lib/fired.js`, `lib/texts.js`, `lib/vault.js`.** Fired: marks, negations and the letter class from the vocabulary. Texts: built-in patterns only, nothing from the config. Vault, every literal of `atlas/lib/vault.js` at `1d882f4`: the collection prefixes of the wikilink resolver (lines 117–124: `development-history/`, `adr/`, `design/`, `guides/`, `AGENTS.md`, `agent_docs/`) from the configured collection names and root docs; `'agent_docs/invariants.md'` (172) from `docs.invariants`; `'deploy/compose.yml'` (290) from `deploy.compose`; `'нет: статика за caddy'` (305) with the `deploy.proxy` name; `` 'вендорный набор `addyosmani/agent-skills`' `` (339) with `skills[<key>].source` from the lock file; `ИСТОЧНИК` of the index note = `build.js`; index title unchanged (`Атлас проекта`, no project name); the `days` note number = key without `units.prefix` instead of `key.slice(3)`; status words from the vocabulary.
+- [ ] **T5. `lib/fired.js`, `lib/texts.js`, `lib/vault.js`.** Fired: marks, negations and the letter class from the vocabulary. Texts: built-in patterns only, nothing from the config. Vault, every literal of the source `atlas/lib/vault.js`: the collection prefixes of the wikilink resolver (lines 117–124: `development-history/`, `adr/`, `design/`, `guides/`, `AGENTS.md`, `agent_docs/`) from the configured collection names and root docs; `'agent_docs/invariants.md'` (172) from `docs.invariants`; `'deploy/compose.yml'` (290) from `deploy.compose`; `'нет: статика за caddy'` (305) with the `deploy.proxy` name; `` 'вендорный набор `addyosmani/agent-skills`' `` (339) with `skills[<key>].source` from the lock file; `ИСТОЧНИК` of the index note = `build.js`; index title unchanged (`Атлас проекта`, no project name); the `days` note number = key without `units.prefix` instead of `key.slice(3)`; status words from the vocabulary.
   - Acceptance: existing fired/texts/vault tests pass on the minimal fixture; `SAMPLES` still equals `MASKED + KEY_SAMPLES`; `grep -n "slice(3)\|agent_docs\|deploy/\|caddy\|addyosmani\|development-history" lib/vault.js` shows no project literal.
   - Files: three modules and their tests. Size M.
 
@@ -114,7 +114,7 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
 
 ### Checkpoint B — compatibility
 
-- [ ] **T7. Compatibility test.** `test/compat.test.js`: skipped unless `ATLAS_REFERENCE_ROOT` is set; runs the reference `node atlas/build.js` in that root and this tool with the example config, then compares `graph.json` and `site/texts.json` byte-for-byte, runs `diff -r` over `vault/` (excluding `index.md`, `skills/skill-inspector.md` and `.obsidian`) and over `site/` (excluding `index.html` and `app.js`), and asserts the checkout is clean (`git status --porcelain` empty) and at `1d882f4`. Prints the first differing line (or the first differing file) on failure.
+- [ ] **T7. Compatibility test.** `test/compat.test.js`: skipped unless `ATLAS_REFERENCE_ROOT` is set; runs the reference `node atlas/build.js` in that root and this tool with the example config, then compares `graph.json` and `site/texts.json` byte-for-byte, runs `diff -r` over `vault/` (excluding `index.md`, `skills/skill-inspector.md` and `.obsidian`) and over `site/` (excluding `index.html` and `app.js`), and asserts the checkout is clean (`git status --porcelain` empty) and at the source commit. Prints the first differing line (or the first differing file) on failure.
   - Acceptance: the mandatory criterion above passes locally.
   - Files: `test/compat.test.js`. Size S.
 
@@ -124,7 +124,7 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
   - Acceptance: `node --test test/*.test.js` green without `ATLAS_REFERENCE_ROOT`; `node build.js --root test/fixtures/minimal --check` exits 0.
   - Files: fixture directory, `test/helpers.js`, touched tests. Size M.
 
-- [ ] **T9. CI.** `.github/workflows/ci.yml`: job `test` — Node 22, `node --test test/*.test.js`, `node build.js --root test/fixtures/minimal --check`; job `secrets` — the same grep as ai-advent-2026 `docs-guard` (built-in fail patterns, `-l` only, exit codes handled); job `compat` — `actions/checkout` of `MikeKharr/ai-advent-2026` with `ref: 1d882f40f8c37370b4dfbc3add650f10d1b11c1c` (the full sha, not the short form) into `reference/`, then `ATLAS_REFERENCE_ROOT=reference node --test test/compat.test.js`. No secrets, `permissions: contents: read`.
+- [ ] **T9. CI.** `.github/workflows/ci.yml`: job `test` — Node 22, `node --test test/*.test.js`, `node build.js --root test/fixtures/minimal --check`; job `secrets` — the same grep as ai-advent-2026 `docs-guard` (built-in fail patterns, `-l` only, exit codes handled); job `compat` — `actions/checkout` of `MikeKharr/ai-advent-2026` with `ref:` the source commit (the full 40-hex sha, not the short form) into `reference/`, then `ATLAS_REFERENCE_ROOT=reference node --test test/compat.test.js`. No secrets, `permissions: contents: read`.
   - Acceptance: all three jobs green on the first PR of the new repository.
   - Files: one workflow. Size S.
 
@@ -132,11 +132,11 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
   - Acceptance: every command in the READMEs runs as written.
   - Size S.
 
-- [ ] **T11. Pre-publication secrets scan.** Over the whole tree, before the first commit: the built-in fail patterns (T9 grep), the mask samples (bare prefixes, the OpenSSH key header, CGNAT `100.x.x.x` addresses), `.env` files, private hostnames from the source project. Expected: **zero hits**. Known sources (line numbers as copied from `atlas/` at `1d882f4`) to fix first: `test/secrets.test.js:29` — the tailnet address from the source project, replace with a synthetic address of the same shape; `test/secrets.test.js:51` and the OpenSSH header sample in the README — write them from parts, as `lib/texts.js:34` does, so the literal never appears; the regex sources in `lib/texts.js` are already assembled from pieces and do not match themselves.
+- [ ] **T11. Pre-publication secrets scan.** Over the whole tree, before the first commit: the built-in fail patterns (T9 grep), the mask samples (bare prefixes, the OpenSSH key header, CGNAT `100.x.x.x` addresses), `.env` files, private hostnames from the source project. Expected: **zero hits**. Known sources (line numbers as copied from the source `atlas/`) to fix first: `test/secrets.test.js:29` — the tailnet address from the source project, replace with a synthetic address of the same shape; `test/secrets.test.js:51` and the OpenSSH header sample in the README — write them from parts, as `lib/texts.js:34` does, so the literal never appears; the regex sources in `lib/texts.js` are already assembled from pieces and do not match themselves.
   - Acceptance: the grep returns nothing; result recorded in the first PR description.
   - Size S.
 
-- [ ] **T12. First commit and repository.** `git init`, single first commit `chore: extract atlas from MikeKharr/ai-advent-2026 at 1d882f4` (no `Co-Authored-By` trailer). The public repository is created by the orchestrator after `reviewer` + `compliance` consensus (owner's decision); default branch `main`, branch protection as in the source project (PR required, CI required).
+- [ ] **T12. First commit and repository.** `git init`, single first commit `chore: extract atlas from MikeKharr/ai-advent-2026 at <source sha>`, naming the source commit (no `Co-Authored-By` trailer). The public repository is created by the orchestrator after `reviewer` + `compliance` consensus (owner's decision); default branch `main`, branch protection as in the source project (PR required, CI required).
 
 ### Phase 4 — English vocabulary (owner's decision of 2026-09-12: now)
 
@@ -159,7 +159,7 @@ Sizes: S 1–2 files, M 3–5 files. Each task ends with `node --test` green.
 | A literal missed (e.g. `'deploy/compose.yml'` in a finding path or vault note) | Medium | grep the tree for `agent_docs`, `deploy/`, `days/`, `router`, `caddy`, `ghcr`, `claude-`, `mikekharr`, `zpq` before T7 |
 | Timezone of the compat job vs local goldens | Low | no stored goldens; both builds run in the same job |
 | `web.test.js` and friends depend on the ai-advent graph (counts, specific ids) | Medium | run them on the fixture graph; move count assertions to T7 |
-| The overlay of ai-advent at `1d882f4` gains a field later and the example stops matching | Low | the example is pinned to `1d882f4`; migrating ai-advent is a separate task |
+| The overlay of ai-advent gains a field later and the example stops matching | Low | the example is pinned to the source commit; migrating ai-advent is a separate task |
 | Publishing widens what is public | Low | the code and docs are already public in ai-advent-2026; only the spec, plan, fixture and example config are new text — T11 checks them |
 
 ## Owner's decisions (2026-09-12)

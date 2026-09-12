@@ -112,7 +112,7 @@ body {
     padding:var(--s-6) var(--s-5); gap:var(--s-6);
   }
   /* Правый отступ обязателен: колонка со своим скроллом обрезает кольцо
-     фокуса (outline-offset 2px). Проверено на дне 8. */
+     фокуса (outline-offset 2px). */
   .side {
     grid-area:side; display:flex; flex-direction:column; gap:var(--s-5);
     min-height:0; overflow-y:auto; padding-right:var(--s-2);
