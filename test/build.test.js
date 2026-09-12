@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { MARKER, UsageError, format, pageHtml, parseArgs, readProvenance, run } from '../build.js'
-import { FIXTURE, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
+import { FIXTURE, FIXTURE_EN, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
 
 // CLI и граница записи: docs/input-spec.md, §2 и §10, с правками ревью
 // проектирования (метка каталога выхода, пересечение со входами, realpath).
@@ -30,6 +30,12 @@ test('--check на минимальной фикстуре — код 0, нич�
 test('--check не разрешает и не проверяет --out', () => {
   const r = cli(['--root', FIXTURE, '--check', '--out', FIXTURE])
   assert.equal(r.status, 0, r.stderr)
+})
+
+test('--check на английской фикстуре — код 0 и те же числа, что у русской', () => {
+  const english = cli(['--root', FIXTURE_EN, '--check'])
+  assert.equal(english.status, 0, english.stderr)
+  assert.equal(english.stdout, cli(['--root', FIXTURE, '--check']).stdout, 'узлов и рёбер поровну')
 })
 
 test('сборка фикстуры пишет граф, витрину, vault и метку', () => {

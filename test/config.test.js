@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { ConfigError, denied, loadConfig, resolveInputs, unitNumber, validateConfig } from '../lib/config.js'
-import { EXAMPLE_CONFIG, FIXTURE, TEMP } from './helpers.js'
+import { EXAMPLE_CONFIG, FIXTURE, FIXTURE_EN, TEMP } from './helpers.js'
 
 // Правила конфигурации — docs/input-spec.md, §3.2–3.3, с правками ревью
 // проектирования (грамматика путей, расширения по полям, `units.prefix`).
@@ -83,9 +83,33 @@ test('неизвестный ключ — находка на любом уро�
 })
 
 test('убранные ревью поля — неизвестные ключи, а не тихо проигнорированные', () => {
-  one({ ...base(), language: 'ru' }, /`language` — неизвестный ключ/)
   one({ ...base(), secrets: { mask: [] } }, /`secrets` — неизвестный ключ/)
   one({ ...base(), project: { name: 'P', repo: 'r', start: 'phase/01' } }, /`project.start` — неизвестный ключ/)
+})
+
+test('словарь: `ru` по умолчанию, `en` вторым, иное значение — находка', () => {
+  const byDefault = check(base())
+  assert.deepEqual(byDefault.findings, [])
+  assert.equal(byDefault.config.language, 'ru')
+  assert.equal(byDefault.config.vocab.sections.status, 'Статус')
+
+  const english = check({ ...base(), language: 'en' })
+  assert.deepEqual(english.findings, [])
+  assert.equal(english.config.language, 'en')
+  assert.equal(english.config.vocab.sections.status, 'Status')
+  assert.equal(english.config.vocab.placeholder, undefined, '`placeholder` у en не задан')
+
+  one({ ...base(), language: 'de' }, /`language` — встроенного словаря `de` нет/)
+  // Имя словаря — не «примерно»: регистр значит ровно то, что написано.
+  one({ ...base(), language: 'RU' }, /встроенного словаря `RU` нет/)
+})
+
+test('конфигурация английской фикстуры загружается без находок', () => {
+  const { config, findings } = loadConfig(join(FIXTURE_EN, 'atlas.config.json'))
+  assert.deepEqual(findings, [])
+  assert.equal(config.language, 'en')
+  assert.equal(config.vocab.labels.owns, 'Owns')
+  assert.equal(config.vocab.sections.excerpt[0], 'Context')
 })
 
 test('вид значения: строка, список, объект', () => {

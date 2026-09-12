@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { EXAMPLE_CONFIG, PKG, TEMP } from './helpers.js'
@@ -79,6 +79,26 @@ test('graph.json байт-в-байт равен исходному пакету
   const ours = readFileSync(join(out, 'graph.json'), 'utf8')
   const theirs = readFileSync(join(ref, 'graph.json'), 'utf8')
   assert.ok(ours === theirs, firstDiff(ours, theirs))
+})
+
+test('явный `"language": "ru"` в конфигурации ничего не меняет', { skip }, () => {
+  const { ref } = buildBoth()
+  const config = join(TEMP, 'compat-ru.config.json')
+  writeFileSync(config, `${JSON.stringify({ ...JSON.parse(readFileSync(EXAMPLE_CONFIG, 'utf8')), language: 'ru' }, null, 2)}\n`)
+  const out = join(TEMP, 'compat-ru')
+  rmSync(out, { recursive: true, force: true })
+  try {
+    const ours = spawnSync(process.execPath, [join(PKG, 'build.js'), '--root', REF, '--config', config, '--out', out], { encoding: 'utf8' })
+    assert.equal(ours.status, 0, `сборка с явным словарём: ${ours.stderr}`)
+    for (const name of ['graph.json', 'site/texts.json']) {
+      const ours = readFileSync(join(out, name), 'utf8')
+      const theirs = readFileSync(join(ref, name), 'utf8')
+      assert.ok(ours === theirs, `${name}: ${firstDiff(ours, theirs)}`)
+    }
+  } finally {
+    rmSync(out, { recursive: true, force: true })
+    rmSync(config, { force: true })
+  }
 })
 
 test('texts.json байт-в-байт равен исходному пакету', { skip }, () => {

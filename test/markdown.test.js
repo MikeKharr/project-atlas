@@ -173,12 +173,45 @@ test('строки замены читаются только из раздел�
   const text =
     '# T\n\n## Статус\n\nПринято. Заменяет `docs/adr/2026-01-10-0900-plain-storage.md`\n\n' +
     '## Контекст\n\n| Потребность | Заменяет `2026-01-01-0000` |\n'
-  assert.deepEqual(replacementRefs(text), { replaces: ['2026-01-10-0900'], replacedBy: [] })
+  assert.deepEqual(replacementRefs(text, minimal.vocab), { replaces: ['2026-01-10-0900'], replacedBy: [] })
 })
 
 test('«Заменено на» отличается от «Заменяет»', () => {
   const text = '# T\n\n## Статус\n\nЗаменено на `2026-01-15-1000-indexed-storage.md`\n'
-  assert.deepEqual(replacementRefs(text), { replaces: [], replacedBy: ['2026-01-15-1000'] })
+  assert.deepEqual(replacementRefs(text, minimal.vocab), { replaces: [], replacedBy: ['2026-01-15-1000'] })
+})
+
+test('строки замены читаются словарём: под en те же правила английскими словами', () => {
+  const { config } = validateConfig(
+    { format: 1, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr' } },
+    { file: 'atlas.config.json' },
+  )
+  const supersedes = '# T\n\n## Status\n\nAccepted. Supersedes `2026-01-10-0900`\n'
+  assert.deepEqual(replacementRefs(supersedes, config.vocab), { replaces: ['2026-01-10-0900'], replacedBy: [] })
+  const supersededBy = '# T\n\n## Status\n\nSuperseded by `2026-01-15-1000`\n'
+  assert.deepEqual(replacementRefs(supersededBy, config.vocab), { replaces: [], replacedBy: ['2026-01-15-1000'] })
+  // `Superseded,` без `by` строкой замены не считается: иначе документ
+  // получил бы ребро замены дважды.
+  assert.deepEqual(replacementRefs('# T\n\n## Status\n\nSuperseded, see `2026-01-15-1000`\n', config.vocab), {
+    replaces: [],
+    replacedBy: [],
+  })
+})
+
+test('под en слово-заглушка в имени файла не отменяет цитату', () => {
+  const { config } = validateConfig(
+    { format: 1, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr', guides: 'guides' } },
+    { file: 'atlas.config.json' },
+  )
+  const g = makeGrammar(config)
+  assert.deepEqual(
+    g.scanCitations('см. `guides/name-format.md` и ADR `2026-01-01-0000-name-service.md`').map((f) => `${f.kind}:${f.value}`),
+    ['path:guides/name-format.md', 'adr:2026-01-01-0000'],
+  )
+  // Сам шаблон остаётся заглушкой: литерал `name.md` есть и без словаря.
+  assert.deepEqual(g.scanCitations('шаблон `guides/name.md`'), [])
+  // Под ru заглушка — слово словаря.
+  assert.deepEqual(makeGrammar(minimal).scanCitations('шаблон `adr/имя.md`'), [])
 })
 
 test('идентификатор атомарного документа вынимается из имени файла', () => {

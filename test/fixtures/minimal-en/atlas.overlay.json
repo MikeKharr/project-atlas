@@ -1,0 +1,9 @@
+{
+  "_": "Manual facts of the minimal project: one gate class and one cycle phase.",
+  "classes": [
+    { "id": "A", "title": "Class A — any change", "what": "Anything that touches the notes or the index", "gates": ["reviewer"], "note": "One gate for everything." }
+  ],
+  "phases": [
+    { "n": 1, "title": "Review", "roles": ["reviewer"], "classes": ["A"], "exit": "Nothing left to change, rule I-1 satisfied.", "human": false }
+  ]
+}
