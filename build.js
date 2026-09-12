@@ -332,10 +332,23 @@ export function serve(dir, port = 8080) {
   return server
 }
 
-/** В Actions находка — аннотация: тогда она видна прямо в diff'е PR. */
-function format(f) {
+/**
+ * Экранирование по правилам команд рабочего процесса Actions. `%` идёт
+ * первым: иначе экранировались бы уже вставленные последовательности, и
+ * `%0A` из текста находки стал бы переводом строки.
+ */
+const escapeData = (s) => String(s).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+/** В значении свойства (`file=`) разделители команды значат больше. */
+const escapeProperty = (s) => escapeData(s).replaceAll(':', '%3A').replaceAll(',', '%2C')
+
+/**
+ * В Actions находка — аннотация: тогда она видна прямо в diff'е PR.
+ * Без экранирования `%` и перевод строки в сообщении рвали команду, а `:`
+ * или `,` в имени файла обрывали разбор свойств.
+ */
+export function format(f) {
   return process.env.GITHUB_ACTIONS === 'true'
-    ? `::error file=${f.file},line=${f.line}::${f.message}`
+    ? `::error file=${escapeProperty(f.file)},line=${f.line}::${escapeData(f.message)}`
     : `${f.file}:${f.line}: ${f.message}`
 }
 
