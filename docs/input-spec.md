@@ -24,9 +24,8 @@ roles, skills, a Compose deployment and an LLM provider list.
 
 Not in scope for format 1:
 
-- languages other than Russian in the document conventions (section names,
-  status words, gate marks) — see §8; a `language` key and an English
-  vocabulary are future work (§14), not a format change;
+- document conventions in languages other than Russian and English (§8);
+  a third vocabulary is a file, not a format change;
 - arbitrary document collections beyond the four fixed kinds (§4.1);
 - any reading outside the configured list (§3.3), ever.
 
@@ -80,6 +79,7 @@ segment, no other characters. File fields require an extension by field:
     "repo": "https://github.com/mikekharr/ai-advent-2026",  // links to files, pinned to the build sha
     "about": "agent_docs/adr/2026-09-10-0550-project-atlas.md"  // optional: "about this atlas" link in the page footer
   },
+  "language": "ru",                // optional; vocabulary of document conventions, §8: "ru" or "en"; default "ru"
   "docs": {                        // required
     "root": "agent_docs",          // directory that holds the document collections
     "adr": "adr",                  // required; single path segment under root
@@ -343,27 +343,58 @@ value. Every `id` (`classes`, `externals`) matches
 a value that is not is a finding of class 6 (§11). An external node with no edge at all is a finding (it is not part of
 the working system, or an edge is missing).
 
-## 8. Vocabulary (built-in `ru`)
+## 8. Vocabulary (`language`)
 
-Everything the grammar matches by *meaning* is a vocabulary entry. Format 1
-has one vocabulary, Russian: the built-in module `lib/vocab/ru.js`, a set of
-constants that `markdown.js`, `extract.js`, `fired.js` and `vault.js` take
-as an argument. The config has no `language` key (§14). Keys:
+Everything the grammar matches by *meaning* is a vocabulary entry: the
+section headings of documents, the ADR status words and replacement lines,
+the labels of role facts, the gate marks of the trace rule and the
+placeholder word of the citation grammar. Format 1 ships two vocabularies
+as built-in modules of constants, `lib/vocab/ru.js` and `lib/vocab/en.js`,
+selected by the config key `language` (`"ru"` or `"en"`; absent means
+`"ru"`, so the ai-advent example is unchanged; any other value is a
+config finding). `markdown.js`, `extract.js`, `fired.js` and `vault.js`
+take the selected module as an argument. Values are regex sources; changing
+a value is a format change.
 
-| Key | `ru` value | Used by |
-|---|---|---|
-| `letters` | `A-Za-zА-Яа-яЁё0-9_` | word boundaries in the gate-trace rule |
-| `sections.status` | `Статус` | ADR status, replacement lines |
-| `sections.excerpt` | `Контекст`, `Что сделано`, `Задача` (in order) | node excerpt |
-| `labels.owns`, `labels.never` | `Владеет`, `Никогда` | role facts |
-| `replaces`, `replacedBy` | `Заменяет`, `Заменено\s+на` | `replaces` edges |
-| `status.accepted/proposed/rejected/superseded` | `Принято`, `Предложено`, `Отклонено`, `Заменено` | vault tags |
-| `placeholder` | `имя` | template placeholder detection |
-| `fired.marks` | `вето`, `блокирующ[а-яё]*`, `находк[а-яё]*`, `правки`, `переделать` | gate traces |
-| `fired.negations` | `нет`, `без\s+(?:вето\|находок\|блокирующих\|правок\|переделки)`, `не\s+(?:ставил\|наложил\|дал)` | gate traces |
+Case follows the code and differs by key: `status.*` (`statusTag` in
+`lib/vault.js`) and `fired.marks` / `fired.negations` (`word()` in
+`lib/fired.js`) are matched **case-insensitively**; `sections.*`
+(`section()`), `labels.*` (`labeledParagraph()`), `replaces`, `replacedBy`
+and `placeholder` are matched **literally as written**. Keys:
 
-Vault note bodies, finding messages and the showcase UI are Russian in
-format 1 as well; they are not part of the input contract.
+| Key | `ru` | `en` | Used by |
+|---|---|---|---|
+| `letters` | `A-Za-zА-Яа-яЁё0-9_` | `A-Za-z0-9_` | word boundaries in the gate-trace rule |
+| `sections.status` | `Статус` | `Status` | ADR status, replacement lines |
+| `sections.excerpt` | `Контекст`, `Что сделано`, `Задача` (in order) | `Context`, `What was done`, `Task` | node excerpt |
+| `labels.owns`, `labels.never` | `Владеет`, `Никогда` | `Owns`, `Never` | role facts |
+| `replaces`, `replacedBy` | `Заменяет`, `Заменено\s+на` | `Supersedes`, `Superseded\s+by` | `replaces` edges |
+| `status.accepted/proposed/rejected/superseded` | `Принято`, `Предложено`, `Отклонено`, `Заменено` | `Accepted`, `Proposed`, `Rejected`, `Superseded` | vault tags |
+| `placeholder` | `имя` | not set (the key is optional) | template placeholder detection |
+| `fired.marks` | `вето`, `блокирующ[а-яё]*`, `находк[а-яё]*`, `правки`, `переделать` | `veto(?:ed)?`, `blocking`, `findings?`, `changes\s+requested`, `request(?:ed)?\s+changes`, `rework` | gate traces |
+| `fired.negations` | `нет`, `без\s+(?:вето\|находок\|блокирующих\|правок\|переделки)`, `не\s+(?:ставил\|наложил\|дал)` | `no`, `none`, `without\s+(?:a\s+)?(?:veto\|findings\|blockers\|changes\|rework)`, `(?:did\|does)\s+not\s+(?:veto\|block\|request\|find)` | gate traces |
+
+The `en` values follow the usual English ADR and change-log wording:
+Nygard's `Status` / `Context` and `Supersedes` / `Superseded by`; the
+review verdicts of this project's design-review rendered in English
+(`changes requested`, `rework`); `What was done` and `Task` as the history
+record headings.
+
+`placeholder` is optional, and `en` deliberately does not set it. The word
+`name` would add `\bname\b` to the template-placeholder rule, and ordinary
+citations would silently stop being citations: `` `guides/name-format.md` ``
+or ADR `` `2026-01-01-0000-name-service.md` ``. The literal `name.md` of
+§5.3 is part of that rule regardless of the vocabulary, so the `имя.md`
+case under `ru` is covered for `en` without the key.
+
+Independent of `language`, the following stay Russian in format 1 and are
+not part of the input contract: vault note bodies (the fixed text around
+the document — provenance block, fact labels, index), finding messages,
+and the showcase UI.
+
+Implementation requirement: with `language` absent or `"ru"` the ai-advent
+example produces exactly the bytes of the compatibility criterion
+(plan, mandatory criterion); `en` changes nothing on that path.
 
 ## 9. Secrets
 
@@ -480,7 +511,7 @@ clean. Closed list of finding classes:
 
 1. configuration: unknown key, bad path (segment grammar, extension),
    deny-listed path — at load or at read, missing dependency between
-   fields (`file` = the config path);
+   fields, `language` outside `ru`/`en` (`file` = the config path);
 2. input listed but unreadable / a symbolic link in its path / resolving
    outside `<root>` / not JSON / compose line outside the parser subset;
 3. atomic document without a timestamp in its name;
@@ -517,15 +548,9 @@ configured is a config finding, not a silent no-op.
 - landing card HTML shape; Compose subset; Caddyfile subset;
 - role frontmatter keys; `SKILL.md` layout; lock file shape;
 - size limits; masking replacement text `[скрыто]`;
-- the Russian vocabulary (§8) and the secret patterns (§9);
+- the two vocabularies `ru` and `en` (§8) and the secret patterns (§9);
 - `--serve` address `127.0.0.1:8080`;
 - layout seed and algorithm.
-
-## 14. Future, outside format 1
-
-- A `language` config key selecting the vocabulary, and an `en` vocabulary
-  module. A file, not a format change. When to add it is an open question
-  to the owner (plan, open question 1).
 
 ## Appendix A. Example: ai-advent-2026
 
