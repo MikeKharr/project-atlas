@@ -327,7 +327,7 @@ export const RELATION = {
   replaces: ['заменяет', 'заменён решением'],
   relies: ['опирается на', 'на него опираются'],
   mentions: ['называет роль', 'назван в'],
-  about: ['про день', 'документы дня'],
+  about: ['про приложение', 'документы приложения'],
   preloads: ['предзагружает', 'предзагружен ролью'],
   tier: ['ярус модели', 'роли яруса'],
   gates: ['гейт класса', 'класс, где это гейт'],
@@ -2206,7 +2206,7 @@ function renderStart(panel) {
   panel.appendChild(traces)
 }
 
-/** Дата дня приходит уже как `13.09`, дата документа — как `2026-09-13`. */
+/** Дата приложения приходит уже как `13.09`, дата документа — как `2026-09-13`. */
 const isIso = (date) => /^\d{4}-\d{2}-\d{2}$/.test(date ?? '')
 const dayMonth = (date) => (isIso(date) ? `${date.slice(8, 10)}.${date.slice(5, 7)}` : (date ?? ''))
 const fullDate = (date) => (isIso(date) ? `${dayMonth(date)}.${date.slice(0, 4)}` : (date ?? ''))
@@ -2477,8 +2477,8 @@ function traceCard(e) {
   const where = el('span')
   where.append(`${dayMonth(record.date)} · `)
   const about = state.graph.edges.find((x) => x.from === record.id && x.kind === 'about')
-  // Запись может быть не привязана к дню — тогда дня в строке просто нет,
-  // без «—» и без «вне дня».
+  // Запись может быть не привязана к приложению — тогда его в строке просто
+  // нет, без «—» и без «вне приложения».
   if (about) where.append(`${node(about.to).key} · `)
   const key = el('a', 'plain', record.key)
   key.href = `#${addressOf(record.id)}`
