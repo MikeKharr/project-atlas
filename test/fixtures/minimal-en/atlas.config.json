@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "project": { "name": "Minimal EN", "repo": "https://example.invalid/minimal-en" },
   "language": "en",
   "docs": { "root": "docs", "adr": "adr", "history": "history", "invariants": "invariants.md", "rootDocs": ["README.md"] },

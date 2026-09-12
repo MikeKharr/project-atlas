@@ -7,7 +7,9 @@ import { readSources } from '../lib/sources.js'
 import {
   FOLD_FROM,
   SLOTS,
+  TYPE_MANY,
   TYPE_NAME,
+  TYPE_PLURAL,
   dedupe,
   factsOf,
   statsOf,
@@ -15,6 +17,7 @@ import {
   addressTable,
   count,
   excerptRuns,
+  familyOf,
   fit,
   foldExcerpt,
   indexGraph,
@@ -530,6 +533,38 @@ test('кратные рёбра между парой узлов сводятс�
   assert.ok(all.length < graph.edges.length)
   const pairs = all.map((e) => (e.from < e.to ? `${e.from} ${e.to}` : `${e.to} ${e.from}`))
   assert.equal(new Set(pairs).size, pairs.length)
+})
+
+test('единица — тип `unit` семейства «Система», подписи про приложения', () => {
+  assert.equal(familyOf('unit'), 'sys')
+  assert.equal(TYPE_NAME.unit, 'Приложение')
+  assert.equal(TYPE_PLURAL.unit, 'Приложения')
+  assert.equal(TYPE_MANY.unit, 'приложений')
+  // Старого ключа нет: он бы молча вернулся в семейство и в подписи.
+  assert.notEqual(familyOf('day'), 'sys', '`day` остался в семействе «Система»')
+  assert.equal(TYPE_NAME.day, undefined)
+  assert.equal(TYPE_PLURAL.day, undefined)
+  assert.equal(TYPE_MANY.day, undefined)
+})
+
+test('панель единицы собирается по полям формата 2', () => {
+  const unit = {
+    id: 'unit/app1',
+    type: 'unit',
+    key: 'app1',
+    title: 'Первое приложение',
+    date: '01.02',
+    route: '/app1/',
+    dir: 'apps/app1',
+    image: 'registry.invalid/team/app1:latest',
+    envFiles: ['./app1.env'],
+  }
+  const facts = factsOf(unit, { nodes: [unit], edges: [] })
+  assert.deepEqual(
+    facts.map((p) => p.term),
+    ['Дата', 'Маршрут', 'Каталог', 'Образ', 'Файлы окружения'],
+  )
+  assert.equal(shortName(unit), 'app1')
 })
 
 test('у документов есть путь для ссылки на файл в репозитории', () => {

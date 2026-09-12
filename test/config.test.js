@@ -11,7 +11,7 @@ import { EXAMPLE_CONFIG, FIXTURE, FIXTURE_EN, TEMP } from './helpers.js'
 
 /** Минимальная верная конфигурация: к ней тесты добавляют по одному нарушению. */
 const base = () => ({
-  format: 1,
+  format: 2,
   project: { name: 'P', repo: 'https://example.invalid/p' },
   docs: { root: 'docs', adr: 'adr' },
 })
@@ -47,11 +47,20 @@ test('самая короткая конфигурация — формат, п�
   assert.deepEqual(check(base()).findings, [])
 })
 
-test('формат обязателен и равен 1', () => {
+test('формат обязателен и равен 2', () => {
   const noFormat = base()
   delete noFormat.format
   one(noFormat, /`format` — обязательное поле/)
-  one({ ...base(), format: 2 }, /`format` — поддерживается только формат 1/)
+  one({ ...base(), format: 3 }, /`format` — поддерживается только формат 2, задан 3/)
+})
+
+test('формат 1 — находка с закрытым списком правок потребителя', () => {
+  const [message] = messages({ ...base(), format: 1 })
+  assert.match(message, /поддерживается только формат 2, задан 1/)
+  // Три правки названы поимённо: читателю не нужно гадать, что изменилось.
+  assert.match(message, /узлы `day` стали `unit`/)
+  assert.match(message, /`about\.\*\.days` → `about\.\*\.units`/)
+  assert.match(message, /поднимите `format` до 2/)
 })
 
 test('обязательные поля проекта и docs', () => {

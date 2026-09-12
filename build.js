@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { ConfigError, loadConfig, resolveInputs } from './lib/config.js'
 import { buildGraph } from './lib/extract.js'
 import { readSources } from './lib/sources.js'
-import { buildTexts } from './lib/texts.js'
+import { KEY_SAMPLES, buildTexts } from './lib/texts.js'
 import { VAULT_DIRS, buildVault } from './lib/vault.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
@@ -380,13 +380,17 @@ export function parseArgs(argv) {
     const arg = argv[i]
     if (arg === '--check') opts.check = true
     else if (arg === '--serve') opts.serve = true
+    else if (arg === '--samples') opts.samples = true
     else if (arg === '--root' || arg === '--config' || arg === '--out') {
       const value = argv[i + 1]
       if (value === undefined || value.startsWith('--')) throw new UsageError(`${arg} требует значения`)
       opts[arg.slice(2)] = value
       i += 1
-    } else throw new UsageError(`неизвестный аргумент ${arg}. Использование: node build.js [--root <каталог>] [--config <файл>] [--out <каталог>] [--check] [--serve]`)
+    } else throw new UsageError(`неизвестный аргумент ${arg}. Использование: node build.js [--root <каталог>] [--config <файл>] [--out <каталог>] [--check] [--serve] | --samples`)
   }
+  // `--samples` только печатает список: с любым другим аргументом это не
+  // сборка и не проверка, а недоразумение.
+  if (opts.samples && argv.length > 1) throw new UsageError('--samples печатает образцы ключей и ничего больше: другие аргументы с ним не сочетаются')
   return opts
 }
 
@@ -395,6 +399,13 @@ function main(argv) {
   let result
   try {
     opts = parseArgs(argv)
+    if (opts.samples) {
+      // Стабильный интерфейс для CI потребителя: он сверяет свой grep
+      // секретов с этим списком. Печатаются источники выражений, собранные
+      // из кусков, — не ключи; ничего не читается и не пишется.
+      for (const sample of KEY_SAMPLES) console.log(sample)
+      return 0
+    }
     result = run({
       root: resolve(opts.root ?? '.'),
       configFile: opts.config === undefined ? undefined : resolve(opts.config),

@@ -51,7 +51,7 @@ test('грамматика фикстуры: корневой документ �
 
 test('без файла инвариантов `I-N` — не цитата', () => {
   const { config } = validateConfig(
-    { format: 1, project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr' } },
+    { format: 2, project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr' } },
     { file: 'atlas.config.json' },
   )
   assert.deepEqual(makeGrammar(config).scanCitations('опора на I-4'), [])
@@ -60,7 +60,7 @@ test('без файла инвариантов `I-N` — не цитата', () 
 
 test('имена корневых документов экранируются в выражении', () => {
   const { config } = validateConfig(
-    { format: 1, project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr', rootDocs: ['a.b.md'] } },
+    { format: 2, project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr', rootDocs: ['a.b.md'] } },
     { file: 'atlas.config.json' },
   )
   const g = makeGrammar(config)
@@ -183,7 +183,7 @@ test('«Заменено на» отличается от «Заменяет»',
 
 test('строки замены читаются словарём: под en те же правила английскими словами', () => {
   const { config } = validateConfig(
-    { format: 1, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr' } },
+    { format: 2, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr' } },
     { file: 'atlas.config.json' },
   )
   const supersedes = '# T\n\n## Status\n\nAccepted. Supersedes `2026-01-10-0900`\n'
@@ -200,7 +200,7 @@ test('строки замены читаются словарём: под en т�
 
 test('под en слово-заглушка в имени файла не отменяет цитату', () => {
   const { config } = validateConfig(
-    { format: 1, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr', guides: 'guides' } },
+    { format: 2, language: 'en', project: { name: 'P', repo: 'r' }, docs: { root: 'docs', adr: 'adr', guides: 'guides' } },
     { file: 'atlas.config.json' },
   )
   const g = makeGrammar(config)

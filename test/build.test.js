@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { MARKER, UsageError, format, pageHtml, parseArgs, readProvenance, run } from '../build.js'
+import { KEY_SAMPLES } from '../lib/texts.js'
 import { FIXTURE, FIXTURE_EN, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
 
 // CLI и граница записи: docs/input-spec.md, §2 и §10, с правками ревью
@@ -215,6 +216,28 @@ test('под GitHub Actions находка — аннотация ::error с ф�
   } finally {
     fx.cleanup()
     rmSync(out, { recursive: true, force: true })
+  }
+})
+
+test('--samples печатает образцы ключей: по строке на образец и ничего больше', () => {
+  const r = cli(['--samples'])
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(r.stderr, '', 'на stderr ничего не печатается')
+  const lines = r.stdout.split('\n').filter((line) => line !== '')
+  // Стабильный интерфейс потребителя: строка в строку — источники выражений.
+  assert.deepEqual(lines, KEY_SAMPLES)
+  assert.equal(existsSync(join(PKG, 'dist')), false, '--samples ничего не пишет')
+})
+
+test('--samples не сочетается с другими аргументами', () => {
+  for (const args of [
+    ['--samples', '--check'],
+    ['--check', '--samples'],
+    ['--samples', '--root', FIXTURE],
+  ]) {
+    const r = cli(args)
+    assert.equal(r.status, 2, `${args.join(' ')}: ${r.stdout}${r.stderr}`)
+    assert.match(r.stderr, /--samples/)
   }
 })
 

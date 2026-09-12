@@ -4,7 +4,7 @@
 // (ADR 2026-09-07-1525).
 //
 // Файл делится надвое. Сверху — чистая часть: всё, что считается из
-// `graph.json` и проверяется тестами `atlas/test/web.test.js` без браузера.
+// `graph.json` и проверяется тестами `test/web.test.js` без браузера.
 // Снизу — отрисовка, которая ничего не решает сама.
 //
 // Ни одно число экрана не написано в разметке: счётчики считаются из
@@ -105,7 +105,7 @@ export function foldExcerpt(excerpt, marks) {
 
 /**
  * Разбор разметки внутри одной строки: `**жирный**` и `` `код` ``, и больше
- * ничего. Непарный маркер остаётся символом: `hit()` в `atlas/lib/fired.js`
+ * ничего. Непарный маркер остаётся символом: `hit()` в `lib/fired.js`
  * намеренно не снимает ведущие `**`, и выдержка может начинаться с
  * открывающей пары без закрывающей.
  *
@@ -200,7 +200,7 @@ export const FAMILIES = [
   { key: 'rul', name: 'Правила', types: ['invariant', 'guide', 'class', 'phase'] },
   { key: 'rec', name: 'Записи', types: ['history'] },
   { key: 'act', name: 'Исполнители', types: ['role', 'tier', 'skill'] },
-  { key: 'sys', name: 'Система', types: ['day', 'service', 'volume', 'external'] },
+  { key: 'sys', name: 'Система', types: ['unit', 'service', 'volume', 'external'] },
 ]
 
 const FAMILY_OF = new Map(FAMILIES.flatMap((f) => f.types.map((t) => [t, f.key])))
@@ -218,7 +218,7 @@ export const TYPE_NAME = {
   skill: 'Скилл',
   class: 'Класс гейтов',
   phase: 'Фаза цикла',
-  day: 'День',
+  unit: 'Приложение',
   service: 'Сервис',
   volume: 'Том',
   external: 'Внешний сервис',
@@ -236,7 +236,7 @@ export const TYPE_PLURAL = {
   skill: 'Скиллы',
   class: 'Классы гейтов',
   phase: 'Фазы цикла',
-  day: 'Дни',
+  unit: 'Приложения',
   service: 'Сервисы',
   volume: 'Тома',
   external: 'Внешние сервисы',
@@ -254,7 +254,7 @@ export const TYPE_MANY = {
   skill: 'скиллов',
   class: 'классов гейтов',
   phase: 'фаз',
-  day: 'дней',
+  unit: 'приложений',
   service: 'сервисов',
   volume: 'томов',
   external: 'внешних сервисов',
@@ -2350,7 +2350,7 @@ export function factsOf(node, graph) {
       say('Критерий выхода', node.exit)
       say('Гейт владельца', node.human === undefined ? undefined : node.human ? 'да' : 'нет')
       break
-    case 'day':
+    case 'unit':
       say('Дата', node.date)
       say('Маршрут', node.route, true)
       say('Каталог', node.dir, true)
