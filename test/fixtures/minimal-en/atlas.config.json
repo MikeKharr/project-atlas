@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "project": { "name": "Minimal EN", "repo": "https://example.invalid/minimal-en" },
+  "language": "en",
+  "docs": { "root": "docs", "adr": "adr", "history": "history", "invariants": "invariants.md", "rootDocs": ["README.md"] },
+  "agents": { "roles": "agents" },
+  "overlay": "atlas.overlay.json"
+}

@@ -11,6 +11,9 @@ export const TEMP = join(PKG, 'temp')
 /** Синтетический проект — docs/input-spec.md, приложение B. */
 export const FIXTURE = join(PKG, 'test/fixtures/minimal')
 
+/** Английский близнец минимальной фикстуры: тот же граф на словаре `en`. */
+export const FIXTURE_EN = join(PKG, 'test/fixtures/minimal-en')
+
 /** Конфигурация примера ai-advent-2026: её проверяет тест совместимости. */
 export const EXAMPLE_CONFIG = join(PKG, 'examples/ai-advent-2026/atlas.config.json')
 

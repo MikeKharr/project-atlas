@@ -1,13 +1,28 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { firedTraces } from '../lib/fired.js'
+import en from '../lib/vocab/en.js'
+import ru from '../lib/vocab/ru.js'
 
 // Правило «правило → где сработало» уточнено после ревью этапа 1:
 // agent_docs/design/2026-09-10-0550-project-atlas.md, раздел
 // «Правило → где сработало».
 
 const ROLES = new Set(['compliance', 'reviewer', 'design', 'design-review', 'backend'])
-const roles = (text) => firedTraces(text, ROLES).map((t) => t.role)
+/** То же правило на английском словаре: слова другие, правило одно. */
+const rolesEn = (text) => firedTraces(text, ROLES, en).map((t) => t.role)
+
+test('правило одно на любой словарь: английские признаки и отрицания', () => {
+  assert.deepEqual(rolesEn('Reviewer requested changes.'), ['reviewer'])
+  assert.deepEqual(rolesEn('| reviewer | **Changes requested:** stale index |'), ['reviewer'])
+  assert.deepEqual(rolesEn('Compliance vetoed the price rule.'), ['compliance'])
+  assert.deepEqual(rolesEn('Reviewer confirmed: no veto.'), [], 'отрицание отменяет след')
+  assert.deepEqual(rolesEn('Merged without findings.'), [])
+  // Словарь не ловит слов чужого языка ни в ту, ни в другую сторону.
+  assert.deepEqual(rolesEn('Compliance вынес вето.'), [])
+  assert.deepEqual(roles('Reviewer requested changes.'), [])
+})
+const roles = (text) => firedTraces(text, ROLES, ru).map((t) => t.role)
 
 test('регистр не учитывается', () => {
   assert.deepEqual(roles('Compliance вынес вето.'), ['compliance'])
@@ -43,7 +58,7 @@ test('отрицание отбрасывает срабатывание', () =>
 
 test('несколько срабатываний в записи дают несколько рёбер', () => {
   const text = '| compliance | **Вето:** первое |\n| compliance | **Вето:** второе |\n'
-  const found = firedTraces(text, ROLES)
+  const found = firedTraces(text, ROLES, ru)
   assert.equal(found.length, 2)
   assert.deepEqual(
     found.map((t) => t.line),
@@ -52,7 +67,7 @@ test('несколько срабатываний в записи дают не�
 })
 
 test('одна строка даёт роли не больше одного ребра', () => {
-  const found = firedTraces('compliance вынес вето; compliance повторил вето.', ROLES)
+  const found = firedTraces('compliance вынес вето; compliance повторил вето.', ROLES, ru)
   assert.equal(found.length, 1)
 })
 
@@ -65,7 +80,7 @@ test('выдержка — фраза целиком, собранная чер�
   // Документы переносятся по ~80 символам, поэтому фраза почти всегда лежит
   // на двух-трёх строках; резать её по границе строки исходника нельзя.
   const text = 'Первое предложение.\nCompliance вынес вето по расчёту\nцены, и раздел переписан. Третье.\n'
-  const [trace] = firedTraces(text, ROLES)
+  const [trace] = firedTraces(text, ROLES, ru)
   assert.equal(trace.excerpt, 'Compliance вынес вето по расчёту цены, и раздел переписан.')
   assert.equal(trace.line, 2, 'номер — строка, где начинается совпавшая единица')
 })
@@ -78,12 +93,12 @@ test('единица привязки осталась строкой: фраз�
 })
 
 test('marks: смещения совпавшей единицы, роли и признака внутри выдержки', () => {
-  const [prose] = firedTraces('Ревью шло долго. Compliance вынес вето по расчёту цены.\n', ROLES)
+  const [prose] = firedTraces('Ревью шло долго. Compliance вынес вето по расчёту цены.\n', ROLES, ru)
   assert.equal(prose.excerpt.slice(...prose.marks.unit), 'Compliance вынес вето по расчёту цены.')
   assert.equal(prose.excerpt.slice(...prose.marks.role), 'Compliance')
   assert.equal(prose.excerpt.slice(...prose.marks.sign), 'вето')
 
-  const [row] = firedTraces('| compliance | **Вето:** причина | итог |\n', ROLES)
+  const [row] = firedTraces('| compliance | **Вето:** причина | итог |\n', ROLES, ru)
   // У строки таблицы единица — вся выдержка.
   assert.deepEqual(row.marks.unit, [0, row.excerpt.length])
   assert.equal(row.excerpt.slice(...row.marks.role), 'compliance')
@@ -99,7 +114,7 @@ test('marks: смещения совпавшей единицы, роли и п�
 
 test('marks считаются по выдержке до обработки разметки', () => {
   // Маркер пункта снят и из выдержки, и из смещений; `**` осталось на месте.
-  const [trace] = firedTraces('- **Ревью**: compliance ставил вето.\n', ROLES)
+  const [trace] = firedTraces('- **Ревью**: compliance ставил вето.\n', ROLES, ru)
   assert.equal(trace.excerpt, '**Ревью**: compliance ставил вето.')
   assert.equal(trace.excerpt.slice(...trace.marks.role), 'compliance')
   assert.equal(trace.excerpt.slice(...trace.marks.sign), 'вето')
@@ -107,7 +122,7 @@ test('marks считаются по выдержке до обработки р�
 
 test('выдержка следа не режется по длине', () => {
   const long = `Compliance вынес вето, ${'и повод расписан подробно, '.repeat(20)}на этом всё.`
-  const [trace] = firedTraces(`${long}\n`, ROLES)
+  const [trace] = firedTraces(`${long}\n`, ROLES, ru)
   assert.equal(trace.excerpt, long)
   assert.ok(trace.excerpt.length > 400)
   assert.equal(trace.excerpt.endsWith('…'), false, 'предел длины у следа снят')
@@ -115,7 +130,7 @@ test('выдержка следа не режется по длине', () => {
 
 test('выдержка — строка целиком, без обрезки', () => {
   const line = `| compliance | **Вето:** ${'а'.repeat(300)} |`
-  const [trace] = firedTraces(line, ROLES)
+  const [trace] = firedTraces(line, ROLES, ru)
   assert.equal(trace.excerpt, line)
   assert.match(trace.excerpt, /^\| compliance \| \*\*Вето:\*\*/)
 })

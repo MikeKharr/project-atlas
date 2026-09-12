@@ -5,7 +5,7 @@ import { loadConfig } from '../lib/config.js'
 import { buildGraph } from '../lib/extract.js'
 import { layout } from '../lib/layout.js'
 import { readSources } from '../lib/sources.js'
-import { FIXTURE, addDeploy, copyFixture, density, editConfig } from './helpers.js'
+import { FIXTURE, FIXTURE_EN, addDeploy, copyFixture, density, editConfig } from './helpers.js'
 
 // Узлы и рёбра — docs/input-spec.md, §4. Числа живого проекта проверяет
 // тест совместимости (test/compat.test.js); здесь — правила на синтетике:
@@ -27,6 +27,35 @@ const dconfig = load(deployed.root)
 const dsources = readSources(deployed.root, dconfig)
 const dg = buildGraph(dsources, dconfig)
 const node = (g, id) => g.nodes.find((n) => n.id === id)
+
+// Английский близнец минимальной фикстуры: тот же граф на словаре `en`.
+const enConfig = load(FIXTURE_EN)
+const enGraph = buildGraph(readSources(FIXTURE_EN, enConfig), enConfig)
+
+test('английская фикстура: находок нет, узлы и рёбра — ровно те же, что у русской', () => {
+  assert.deepEqual(enGraph.findings, [])
+  assert.deepEqual(
+    enGraph.nodes.map((n) => n.id),
+    graph.nodes.map((n) => n.id),
+  )
+  assert.deepEqual(enGraph.edges.map(line), graph.edges.map(line))
+})
+
+test('английская фикстура: статус, выдержка, факты роли и след читаются словарём', () => {
+  const adr = node(enGraph, 'adr/2026-01-15-1000')
+  assert.match(adr.status, /^Accepted/)
+  assert.match(adr.excerpt, /^There are more notes now/, 'выдержка — раздел `Context`')
+  assert.match(node(enGraph, 'history/2026-01-16-1200').excerpt, /^The index was built/, 'раздел `What was done`')
+
+  const role = node(enGraph, 'role/reviewer')
+  assert.equal(role.owns, 'checking changes before a merge, tests included.')
+  assert.equal(role.never, 'checks code of its own writing.')
+
+  const [trace, ...rest] = kind(enGraph, 'fired')
+  assert.deepEqual(rest, [], 'строка с отрицанием следа не даёт')
+  assert.equal(trace.excerpt.slice(...trace.marks.role), 'reviewer')
+  assert.equal(trace.excerpt.slice(...trace.marks.sign), 'Changes requested')
+})
 
 // --- минимальная фикстура ---------------------------------------------------
 
