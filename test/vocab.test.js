@@ -58,34 +58,92 @@ const modules = (dir) =>
   )
 
 /**
- * Единственное разрешённое совпадение: подпись факта роли в заметке vault.
- * Это **вывод**, а не разбор входа, — §8 оставляет тексты заметок русскими
- * при любом словаре, и на этой строке держится байтовое равенство формата 1
- * (`vault/roles/*.md` исходного пакета). Всё прочее — слово соглашения,
- * забытое вне словаря.
+ * Слова соглашений берутся из значений словаря `ru`, а не списком в тесте:
+ * страж обновляется вместе со словарём. Синтаксис выражений снимается —
+ * остаются кириллические слова и сами значения целиком.
  */
-const ALLOWED = [{ file: 'lib/vault.js', line: /^\s*`- Владеет: \$\{node\.owns/ }]
+const NEEDLES = [...new Set([...VALUES(ru), ...VALUES(ru).flatMap((v) => v.match(/[А-Яа-яЁё]+/g) ?? [])])]
+  .filter((s) => /[А-Яа-яЁё]/.test(s))
+  .sort()
 
-test('русские слова соглашений — только в словаре ru и в фиксированном тексте заметок', () => {
-  const words = /Статус|Владеет|Заменяет|вето/
+/**
+ * Ищется не слово в тексте, а **форма сопоставления входа**: литерал, который
+ * целиком есть слово словаря — с обёрткой выражения или без (`'Контекст'`,
+ * `'^Принято'`, `/вето/i`, `/Заменено\s+на/`). Русская речь сообщений и
+ * фиксированных текстов заметок такой формы не имеет: `«не читается никогда»`
+ * и `«Правки вносить в репозиторий»` — это вывод, и он остаётся русским при
+ * любом словаре (§8). Поэтому список исключений не нужен: страж ловит ровно
+ * то, ради чего заведён, и молчит о прозе.
+ */
+const matcherLiterals = (source) =>
+  (source.match(/'[^'\n]*'|"[^"\n]*"|`[^`\n]*`|\/(?:[^/\n\\]|\\.)+\/[gimsuy]*/g) ?? [])
+    .map((literal) => literal.replace(/^['"`]|['"`]$|^\/|\/[gimsuy]*$/g, ''))
+    .map((body) => body.replace(/^\^|\$$|^\\b|\\b$|^\(\?:|\)$/g, ''))
+    .filter((body) => NEEDLES.some((needle) => needle.toLowerCase() === body.toLowerCase()))
+
+test('страж собран из словаря: слова взяты из значений `ru`, а не списком', () => {
+  for (const word of ['Статус', 'Контекст', 'Задача', 'Владеет', 'Никогда', 'Заменяет', 'Принято', 'вето', 'правки', 'переделать']) {
+    assert.ok(NEEDLES.includes(word), `${word} не выведено из словаря`)
+  }
+  assert.ok(NEEDLES.includes(ru.replacedBy), 'значение целиком тоже ищется')
+})
+
+test('страж ловит возвращённый литерал сопоставления и молчит о прозе', () => {
+  // Положительный контроль: так выглядит возврат литерала в модуль.
+  assert.deepEqual(matcherLiterals("const s = section(text, 'Контекст')"), ['Контекст'])
+  assert.deepEqual(matcherLiterals('labeledParagraph(body, "Владеет")'), ['Владеет'])
+  assert.deepEqual(matcherLiterals("new RegExp('^Принято', 'i')"), ['Принято'])
+  assert.deepEqual(matcherLiterals('/вето/i.test(line)'), ['вето'])
+  assert.deepEqual(matcherLiterals('const MARKS = [/Заменено\\s+на/]'), ['Заменено\\s+на'])
+  // Отрицательный контроль: слово внутри фразы — речь, а не сопоставление.
+  assert.deepEqual(matcherLiterals("note(rel, 1, 'такое не читается никогда')"), [])
+  assert.deepEqual(matcherLiterals('`- Владеет: ${node.owns}`'), [])
+  assert.deepEqual(matcherLiterals("'ВНИМАНИЕ: копия только для чтения. Правки вносить в репозиторий.'"), [])
+})
+
+/**
+ * Разрешённые совпадения: заглушки фактов в заметках vault — `Образ: нет`,
+ * `Файлы окружения: нет`, `Тома: нет`. Слово совпадает со значением словаря
+ * (первое отрицание правила следов), но это **вывод**, а не сопоставление
+ * входа: тексты заметок остаются русскими при любом словаре (§8) и входят в
+ * сверку байт в байт формата 1. Список короткий и именной — новое совпадение
+ * где угодно ещё красит тест.
+ */
+const ALLOWED = [{ file: 'lib/vault.js', literal: 'нет', count: 3 }]
+
+test('ни один модуль не сопоставляет вход русским литералом', () => {
   const hits = []
   for (const path of modules(join(PKG, 'lib'))) {
     if (path === join(PKG, 'lib/vocab/ru.js')) continue
     const rel = path.slice(PKG.length)
     for (const [i, text] of readFileSync(path, 'utf8').split('\n').entries()) {
-      if (!words.test(text)) continue
-      if (ALLOWED.some((a) => a.file === rel && a.line.test(text))) continue
-      hits.push(`${rel}:${i + 1}: ${text.trim()}`)
+      for (const literal of matcherLiterals(text)) {
+        if (ALLOWED.some((a) => a.file === rel && a.literal === literal)) continue
+        hits.push(`${rel}:${i + 1}: ${literal}`)
+      }
     }
   }
-  assert.deepEqual(hits, [], 'слово соглашения осталось вне словаря')
+  assert.deepEqual(hits, [], 'слово соглашения вернулось в модуль литералом')
 })
 
-test('разрешённое совпадение — ровно одно и на месте', () => {
-  // Если подпись переедет или исчезнет, список исключений обязан устареть
-  // заметно, а не тихо разрешать лишнее.
-  const lines = readFileSync(join(PKG, 'lib/vault.js'), 'utf8')
-    .split('\n')
-    .filter((text) => ALLOWED[0].line.test(text))
-  assert.equal(lines.length, 1)
+test('разрешённые совпадения — ровно те, что перечислены, и столько же', () => {
+  // Если заглушка переедет или исчезнет, список исключений устареет заметно,
+  // а не станет тихо разрешать лишнее.
+  for (const { file, literal, count } of ALLOWED) {
+    const found = readFileSync(join(PKG, file), 'utf8')
+      .split('\n')
+      .flatMap((text) => matcherLiterals(text))
+      .filter((found) => found === literal)
+    assert.equal(found.length, count, `${file}: ${literal}`)
+  }
+})
+
+test('подписи фактов роли в заметке — вывод: по одной строке каждая, в vault.js', () => {
+  // Они остаются русскими при любом словаре (§8) и входят в сверку байт в
+  // байт формата 1, поэтому менять их нельзя. Страж их не ловит по форме —
+  // здесь они названы явно, чтобы исключение было видно, а не подразумевалось.
+  const source = readFileSync(join(PKG, 'lib/vault.js'), 'utf8').split('\n')
+  for (const label of [/^\s*`- Владеет: \$\{node\.owns/, /^\s*`- Никогда: \$\{node\.never/]) {
+    assert.equal(source.filter((text) => label.test(text)).length, 1, String(label))
+  }
 })
