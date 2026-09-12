@@ -145,7 +145,7 @@ The tool reads **only** the files and directories named by the
 configuration; directories are listed non-recursively, by file mask. Every
 read goes through a single guard that checks the path against the resolved
 list — the list is the intent, the guard is the guarantee (as in
-`atlas/lib/sources.js` today). Tests keep a golden copy of the resolved list
+the source package at `1d882f4`). Tests keep a golden copy of the resolved list
 for the example configuration.
 
 Every read and every directory listing checks the path with `lstat`, one
@@ -400,7 +400,7 @@ or ADR `` `2026-01-01-0000-name-service.md` ``. The literal `name.md` of
 §5.3 is part of that rule regardless of the vocabulary, so the `имя.md`
 case under `ru` is covered for `en` without the key.
 
-Independent of `language`, the following stay Russian in format 1 and are
+Independent of `language`, the following stay Russian in format 2 and are
 not part of the input contract: vault note bodies (the fixed text around
 the document — provenance block, fact labels, index), finding messages,
 and the showcase UI.
@@ -424,7 +424,7 @@ so the file does not look like a leak):
   Replaced by `[скрыто]` in `texts.json` as the last step; the count per
   node is reported by the build.
 
-Both lists are built-in and not extensible from the config in format 1. The
+Both lists are built-in and not extensible from the config in format 2. The
 same built-in *fail* list is what the CI secrets scan greps over the whole
 tree (plan T9, T11); the showcase guard test asserts that no `mask` or
 `fail` sample survives in any file under `<out>/site`.
@@ -467,8 +467,8 @@ built-in and not configurable: `texts.json` 3072 KiB, `graph.json`
 `{ provenance: { sha, dirty, date }, nodes: [...], edges: [...] }`, two-space
 indented, trailing newline. `provenance` is absent-valued (`null`, `false`,
 `null`) without git. Node and edge shapes and order: §4. No format field
-inside the file — adding one is format 2 (it would break equality with the
-source project).
+inside the file — adding one is a format change (it would break equality
+with every consumer reading the file today).
 
 ### 10.2 `texts.json`
 
@@ -478,12 +478,14 @@ non-vendored `skill` nodes. Processing: frontmatter, heading hashes, `**`,
 backticks, table pipes and separator rows removed; link syntax reduced to
 its text; whitespace collapsed; then masking (§9).
 
-### 10.3 Vault (format 1)
+### 10.3 Vault
 
 As produced by `atlas/lib/vault.js` at `1d882f4`: frontmatter first, then
 the provenance comment block (source path, commit, commit time, read-only
 notice), then the body with citations rewritten to wikilinks. Every note is
-byte-equal to the source project's except two: `index.md`, whose
+byte-equal to the source project's **up to the rename map** (§10.5: the
+directory `units/`, the frontmatter key `unit:`, the tags `type/unit` and
+`unit/N`) — except two: `index.md`, whose
 provenance block names the generator as `build.js` instead of
 `atlas/build.js` (the title stays `Атлас проекта`, without a project name);
 and `skills/skill-inspector.md`, whose "Происхождение" line takes the

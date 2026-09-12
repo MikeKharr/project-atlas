@@ -53,7 +53,7 @@ Everything project-specific comes from two files in the target repository:
   external services and the facts no machine-readable file holds.
 
 The contract for both, and for the outputs, is
-[`docs/input-spec.md`](docs/input-spec.md) (format 1). Two complete examples:
+[`docs/input-spec.md`](docs/input-spec.md) (format 2). Two complete examples:
 
 - [`test/fixtures/minimal/`](test/fixtures/minimal/) — a synthetic project with
   no design, guides, skills, units or deploy blocks;
@@ -61,9 +61,10 @@ The contract for both, and for the outputs, is
   — the project the tool was extracted from; see
   [its README](examples/ai-advent-2026/README.md).
 
-Document conventions (section names, status words, gate marks) come from the
-vocabulary `lib/vocab/ru.js`. Format 1 ships Russian only; the showcase UI,
-vault note bodies and finding messages are Russian too.
+Document conventions (section names, status words, gate marks) come from a
+vocabulary chosen by the config key `language`: `lib/vocab/ru.js` (default)
+or `lib/vocab/en.js`. Independently of that choice the showcase UI, vault
+note bodies and finding messages are Russian.
 
 ## Boundaries
 
