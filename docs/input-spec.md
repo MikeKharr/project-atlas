@@ -1,6 +1,7 @@
-# project-atlas — input specification, format 1
+# project-atlas — input specification, format 2
 
-Status: proposed (2026-09-11). Companion: `docs/extraction-plan.md`.
+Status: proposed (2026-09-11; format 2 since 2026-09-12). Companions:
+`docs/extraction-plan.md`, `docs/migration-plan.md`.
 
 project-atlas reads a repository by an explicit list of paths and builds a
 graph of its documents, rules, agents and deploy units: `graph.json` and
@@ -9,11 +10,10 @@ extracted from the `atlas/` package of `MikeKharr/ai-advent-2026`
 (source commit `1d882f4`); everything that was hard-wired to that repository
 now comes from a **project configuration file** plus a **manual overlay**.
 
-This document is the contract for both files and for the outputs. Format 1
-is defined as: *on the ai-advent-2026 checkout at `1d882f4`, with the
-example configuration in `examples/ai-advent-2026/`, the tool produces
-`graph.json` and `texts.json` byte-for-byte equal to `node atlas/build.js`
-in that checkout.* Any change that breaks that equality is format 2.
+This document is the contract for both files and for the outputs. The tool
+supports **format 2 only**; a configuration with `"format": 1` is a finding
+naming the three edits a consumer has to make. What changed between the
+formats, and what format 1 was, is in "Format history" (§10.5).
 
 ## 1. Scope and non-goals
 
@@ -22,7 +22,7 @@ Markdown documents (ADR, development history, design specs, guides), cites
 them in backticks, numbers its invariants, and optionally describes agent
 roles, skills, a Compose deployment and an LLM provider list.
 
-Not in scope for format 1:
+Not in scope for format 2:
 
 - document conventions in languages other than Russian and English (§8);
   a third vocabulary is a file, not a format change;
@@ -33,6 +33,7 @@ Not in scope for format 1:
 
 ```sh
 node build.js [--root <dir>] [--config <file>] [--out <dir>] [--check] [--serve]
+node build.js --samples
 ```
 
 | Option | Default | Meaning |
@@ -42,6 +43,13 @@ node build.js [--root <dir>] [--config <file>] [--out <dir>] [--check] [--serve]
 | `--out` | `<package>/dist` | output directory (§10); resolved with `realpath`; must not be `<root>` or one of its ancestors, must not contain any input and must not lie inside an input (`<root>/dist` is fine) |
 | `--check` | off | validate only: nothing is written, exit 1 on any finding (§11); `--out` is neither resolved nor checked |
 | `--serve` | off | after a build, serve `<out>/site` on `127.0.0.1:8080` |
+| `--samples` | off | print the regex sources of the built-in key samples (§9), one per line, and exit 0 |
+
+`--samples` is a stable interface for the consumer's CI: it compares its own
+secrets grep with this list instead of keeping a second copy of the patterns.
+It reads and writes nothing, prints nothing else, and does not combine with
+any other argument (that is a usage error, exit 2). The sources are assembled
+from pieces, so the output does not itself look like a key.
 
 Exit codes: `0` — no findings; `1` — findings (printed, nothing written);
 `2` — cannot start (config file missing or not JSON, bad CLI arguments,
@@ -176,7 +184,7 @@ compatibility test in the plan is the authority).
 | `role` | `agents.roles/*.md` | filename without `.md` | `file, model, effort, skills, description, owns, never` | sorted |
 | `tier` | derived from roles | `<model sanitized>-<effort>` | `model, effort`; title `<model without modelPrefix> / <effort>` | emitted right after the first role that uses it |
 | `skill` | `agents.skills/<name>/SKILL.md` | directory name | `file, description, vendored` | sorted |
-| `day` | `units.dir/<name>` matching `^<units.prefix>(\d+)$` | directory name | `date, dir, route, image, envFiles` | by the number |
+| `unit` | `units.dir/<name>` matching `^<units.prefix>(\d+)$` | directory name | `date, dir, route, image, envFiles` | by the number |
 | `service` | compose services whose name is not `<units.prefix><number>`; then `deploy.static` | service name | compose: `image, envFiles, file`; static: `source` (`<dir>/`), `file`, `note` | compose order, then config order |
 | `volume` | top-level `volumes:` of compose | volume name | `file` | file order |
 | `external` | `deploy.providers.file` entries; then overlay `externals` | provider `id` / overlay `id` | providers: `kind, tier, model, source`; overlay: `kind, note, source` | file order, then overlay order |
@@ -188,9 +196,9 @@ compatibility test in the plan is the authority).
 path of a document or compose file. `x`, `y`, `z` (layout, `0…1`, six
 decimals, deterministic) are appended to every node last; `z` before `x`.
 
-The type name `day` is kept from the source project for format-1
-equality; it means "numbered app unit". Renaming it to `unit` is a format-2
-change.
+The type name is `unit` — a numbered app unit. The key keeps whatever the
+directory is called, so a project whose units live in `days/day1` has a node
+`unit/day1`: the **type** is renamed by format 2, the **key** is data.
 
 ### 4.2 Edge table
 
@@ -198,21 +206,21 @@ change.
 |---|---|---|
 | `tier` | role → tier | role frontmatter `model` + `effort` |
 | `preloads` | role → skill | role frontmatter `skills:`; unknown skill is a finding |
-| `depends` | day/service → day/service | compose `depends_on` |
-| `mounts` | day/service → volume | compose `volumes:` of a service, named volumes only |
-| `routes` | proxy service → day/service | Caddyfile `reverse_proxy <service>:<port>` inside a `handle_path <prefix>*` block; one edge per service |
+| `depends` | unit/service → unit/service | compose `depends_on` |
+| `mounts` | unit/service → volume | compose `volumes:` of a service, named volumes only |
+| `routes` | proxy service → unit/service | Caddyfile `reverse_proxy <service>:<port>` inside a `handle_path <prefix>*` block; one edge per service |
 | `serves` | proxy service → static service | proxy bind-mounts a path that resolves (relative to the compose file's directory) to the static service's `dir` |
 | `calls` | providers service → external | one per provider entry |
-| `image` | day/service → external | compose `image:` starts with `deploy.registry.prefix` |
+| `image` | unit/service → external | compose `image:` starts with `deploy.registry.prefix` |
 | `publishes` | external → external | overlay `publishes` |
-| `calls` | day/service → external | overlay `calls` |
+| `calls` | unit/service → external | overlay `calls` |
 | `gates` | class → role | overlay `classes[].gates` |
 | `runs` | phase → role, phase → class | overlay `phases[].roles`, `phases[].classes` |
 | `cites` | adr/history/design/guide/role → adr/history/design/guide | citations, §5.3; once per (document, target) |
 | `relies` | same → invariant | `I-N` mentions; once per pair |
 | `mentions` | same → role | `` `role` `` in backticks; once per pair; never self |
 | `replaces` | adr → adr | status lines, §5.5; `replacedBy` yields the reverse edge |
-| `about` | adr/history/design → day | a unit key as a whole word in the document's filename; overridden by overlay `about` |
+| `about` | adr/history/design → unit | a unit key as a whole word in the document's filename; overridden by overlay `about.<doc>.units` |
 | `fired` | role → history | the gate-trace rule, §5.6; carries `line, excerpt, marks` |
 
 Edge order in `graph.json` follows this table with two exceptions, kept
@@ -303,11 +311,11 @@ vocabulary's letter class.
 
 | Source | Read as | Absent from config |
 |---|---|---|
-| `deploy.compose` | narrow parser: `services:` with `image`, `depends_on`, `volumes`, `env_file` (short and `path:` long form), top-level `volumes:`; any other line inside a parsed block is a finding | no `service`, `volume`, `day` deploy fields; no `depends`, `mounts`, `image`, `routes`, `serves` |
-| `deploy.caddyfile` | `handle_path <prefix>*` blocks by brace depth; `reverse_proxy <service>:<port>` inside; comments ignored | `route` is `null` on days; no `routes` edges |
-| `deploy.landing` | anchors `<a class="app" href="/<unit>/" data-date="…">` with a `class="app-text"` title | day `title` = key, `date` = `null` |
+| `deploy.compose` | narrow parser: `services:` with `image`, `depends_on`, `volumes`, `env_file` (short and `path:` long form), top-level `volumes:`; any other line inside a parsed block is a finding | no `service`, `volume`, `unit` deploy fields; no `depends`, `mounts`, `image`, `routes`, `serves` |
+| `deploy.caddyfile` | `handle_path <prefix>*` blocks by brace depth; `reverse_proxy <service>:<port>` inside; comments ignored | `route` is `null` on units; no `routes` edges |
+| `deploy.landing` | anchors `<a class="app" href="/<unit>/" data-date="…">` with a `class="app-text"` title | unit `title` = key, `date` = `null` |
 | `deploy.providers` | JSON array of `{ id, kind, tier, model, … }`; only these four fields are read — `baseUrl` and the rest are never output | no provider externals |
-| `units` | directory names | no `day` nodes; every compose service is a `service`; no `about` edges |
+| `units` | directory names | no `unit` nodes; every compose service is a `service`; no `about` edges |
 | `agents.roles` | §5.2 | no roles/tiers; overlay references to roles are findings |
 | `agents.skills`, `agents.skillsLock` | `SKILL.md` frontmatter; `skills[<name>]` in the lock marks a skill vendored | no skills / all skills own |
 | `overlay` | §7 | no classes, phases, externals, manual calls, about overrides |
@@ -330,13 +338,18 @@ a free comment.
   "externals": [{ "id": "ghcr", "title": "…", "kind": "registry", "note": "…" }],
   "publishes": [{ "from": "github-actions", "to": "ghcr" }],
   "calls":     [{ "from": "day1", "to": "anthropic-api" }],   // from: compose service or unit
-  "about":     { "<doc key>": { "days": ["day4"], "why": "…" } } // overrides filename-derived unit binding
+  "about":     { "<doc key>": { "units": ["day4"], "why": "…" } } // overrides filename-derived unit binding
 }
 ```
 
+The key of an `about` entry is `units` (format 2). An entry that still
+carries the format-1 key `days` is a finding naming the rename, and its
+value is **not** read — a silent fallback would drop the bindings without
+saying so.
+
 Every name in the overlay is validated against the graph: roles against
 `agents.roles`, services against compose, externals against `externals` and
-providers, days against `units`, documents against the three collections.
+providers, unit keys against `units`, documents against the three collections.
 Each mismatch is a finding pointing at the overlay line that holds the
 value. Every `id` (`classes`, `externals`) matches
 `^[A-Za-z0-9][A-Za-z0-9_-]*$` and every `phases[].n` is a positive integer;
@@ -425,7 +438,7 @@ tree (plan T9, T11); the showcase guard test asserts that no `mask` or
 <out>/site/app.js, style.css
 <out>/site/graph.json
 <out>/site/texts.json
-<out>/vault/<dirs>/…        adr, history, design, guides, invariants, roles, days, services, skills, classes, phases, index.md
+<out>/vault/<dirs>/…        adr, history, design, guides, invariants, roles, units, services, skills, classes, phases, index.md
 ```
 
 `<out>` is resolved with `realpath`; when it or its parent does not exist,
@@ -449,7 +462,7 @@ the root never lets a write escape `<out>`. Size limits are
 built-in and not configurable: `texts.json` 3072 KiB, `graph.json`
 1024 KiB, page code 256 KiB; exceeding one is a finding.
 
-### 10.1 `graph.json` (format 1)
+### 10.1 `graph.json`
 
 `{ provenance: { sha, dirty, date }, nodes: [...], edges: [...] }`, two-space
 indented, trailing newline. `provenance` is absent-valued (`null`, `false`,
@@ -457,7 +470,7 @@ indented, trailing newline. `provenance` is absent-valued (`null`, `false`,
 inside the file — adding one is format 2 (it would break equality with the
 source project).
 
-### 10.2 `texts.json` (format 1)
+### 10.2 `texts.json`
 
 One object `{ "<node id>": "<text>" }` in node order, no indentation,
 trailing newline. Set: `adr`, `history`, `design`, `guide`, `role` nodes and
@@ -495,11 +508,38 @@ name or ADR id: the "how it works" caption is generic, and the fallback
 sentence shown when the build had no commit names no branch. The lede
 sentence about the day cycle is rendered only when `phase` nodes exist.
 
-### 10.5 Versions
+### 10.5 Format history
 
-Format 1 for all three outputs is pinned to this document and to the
-compatibility test against `1d882f4`. The tool's `package.json` version
-tracks releases; a format bump is a major version.
+The tool's `package.json` version tracks releases; a format bump is a major
+version. The tool supports **one** format at a time — the current one.
+
+**Format 1** — this tool before `v2.0.0` (commit `0d9eab4`). Defined by byte
+equality with ai-advent-2026 at `1d882f4`: the same `graph.json` and
+`texts.json` as `node atlas/build.js` in that checkout. Numbered app units
+were the node type `day`.
+
+**Format 2** — since `v2.0.0`. The whole change is the rename `day` → `unit`:
+
+| Where | Format 1 | Format 2 |
+|---|---|---|
+| node type, id | `day`, `day/<key>` | `unit`, `unit/<key>` |
+| edge ends (`depends`, `mounts`, `routes`, `image`, `calls`, `about`) | `day/…` | `unit/…` |
+| vault directory | `days/` | `units/` |
+| vault frontmatter of a unit note | `day: N` | `unit: N` |
+| vault tags (unit notes and documents bound by `about`) | `type/day`, `day/N` | `type/unit`, `unit/N` |
+| overlay | `about.<doc>.days` | `about.<doc>.units`; `days` is a finding naming the rename |
+| config | `"format": 1` | `"format": 2`; `1` is a finding listing the three consumer edits |
+| showcase | type `day`, labels «День / Дни / дней» | type `unit`, labels «Приложение / Приложения / приложений» |
+
+Unchanged by the rename: the config block `units` (`dir`, `prefix`) and unit
+**keys** — a unit directory named `day1` stays the key `day1`; `texts.json`
+(no unit nodes in it); `x`, `y`, `z`; and `marks.unit` on `fired` edges,
+where "unit" is a fragment of the excerpt — a homonym, not a node type, and
+deliberately not renamed.
+
+Equality with format 1 is still checked: `test/compat.test.js` builds
+ai-advent at `1d882f4` with the old package and this tool with the example
+config, and compares them **up to the map above** (`test/rename-map.js`).
 
 ## 11. Findings and `--check`
 
@@ -517,9 +557,9 @@ clean. Closed list of finding classes:
 3. atomic document without a timestamp in its name;
 4. citation not resolving: ADR id, collection path, root doc, invariant;
 5. role preloads an unknown skill;
-6. overlay reference to an unknown role, class, service, external, day or
-   document; `publishes` between unknown externals; an `id` outside the
-   grammar of §7;
+6. overlay reference to an unknown role, class, service, external, unit or
+   document; the format-1 key `days` in an `about` entry; `publishes`
+   between unknown externals; an `id` outside the grammar of §7;
 7. `deploy.registry.external` not declared in the overlay;
    `deploy.providers.service` or `deploy.proxy` not a compose service;
 8. external node without any edge;
@@ -540,11 +580,11 @@ without `docs.design` is a plain backticked word). An input **listed but
 missing or unreadable** is a finding. A field whose dependency is not
 configured is a config finding, not a silent no-op.
 
-## 13. Fixed in format 1 (not configurable)
+## 13. Fixed in format 2 (not configurable)
 
 - invariant id shape `I-<n>` and the line form `- **I-N.** text`;
 - the four document kinds and their node types; root docs as `guide`;
-- node type and id namespaces, including `day`;
+- node type and id namespaces, including `unit`;
 - landing card HTML shape; Compose subset; Caddyfile subset;
 - role frontmatter keys; `SKILL.md` layout; lock file shape;
 - size limits; masking replacement text `[скрыто]`;

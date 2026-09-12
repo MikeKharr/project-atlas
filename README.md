@@ -24,8 +24,12 @@ Node 22, no dependencies.
 node build.js --root test/fixtures/minimal --check                  # validate only, writes nothing
 node build.js --root test/fixtures/minimal --out temp/minimal       # graph, showcase and vault
 node build.js --root test/fixtures/minimal --out temp/minimal --serve   # same, then serve the showcase on 127.0.0.1:8080
+node build.js --samples                                             # the built-in key samples, one per line
 node --test test/*.test.js
 ```
+
+`--samples` is the stable interface a consumer's CI uses to compare its own
+secrets grep with the tool's list; it reads and writes nothing.
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -151,24 +155,40 @@ lib/vault.js     Obsidian notes
 lib/vocab/ru.js  document-convention vocabulary
 ```
 
-## Compatibility (format 1)
+## Compatibility (format 2)
 
-Format 1 is defined as: on `MikeKharr/ai-advent-2026` at
-`1d882f40f8c37370b4dfbc3add650f10d1b11c1c`, with the example configuration,
-this tool produces `graph.json` and `texts.json` byte-for-byte equal to
-`node atlas/build.js` in that checkout. `test/compat.test.js` checks it, and
-also that `site/` and `vault/` differ only in four named files:
+The tool speaks format 2: numbered app units are `unit` nodes. Format 1 was
+the same tool before `v2.0.0` — see "Format history" in
+[`docs/input-spec.md`](docs/input-spec.md) §10.5 for the full rename map and
+for what the two formats are.
+
+Equality with format 1 is still checked, up to that map.
+`test/compat.test.js` builds `MikeKharr/ai-advent-2026` at
+`1d882f40f8c37370b4dfbc3add650f10d1b11c1c` with its own old package, builds
+the same checkout with this tool and the example configuration, and compares
+the outputs through `test/rename-map.js` — the single implementation of the
+map, which also runs as a command:
+
+```sh
+node test/rename-map.js <reference dist> <our out>
+```
+
+Beyond the map, `site/` and `vault/` differ only in four named files:
 
 | File | Difference |
 |---|---|
-| `site/index.html` | the `<meta name="atlas-…">` tags |
+| `site/index.html` | the `<meta name="atlas-…">` tags, and «дней» → «приложений» in a comment |
 | `site/app.js` | no project constants; generic footer wording |
-| `vault/index.md` | `ИСТОЧНИК: build.js` instead of `atlas/build.js` |
+| `vault/index.md` | `ИСТОЧНИК: build.js` instead of `atlas/build.js`; the sections list says `units/` |
 | `vault/skills/skill-inspector.md` | the vendor set is taken from the skills lock file |
 
 The test is skipped unless `ATLAS_REFERENCE_ROOT` points at a clean checkout of
-that commit; the `compat` CI job provides one. Both builds must run in the same
-timezone: commit times are formatted in local time.
+that commit; the `compat` CI job provides one. It checks that checkout by
+content — no `assume-unchanged` bit, overlay equal to `HEAD` — before building
+and again afterwards, because it rewrites the overlay's `about` key to the
+format-2 `units` for the duration of the run and restores it in `finally`.
+Both builds must run in the same timezone: commit times are formatted in
+local time.
 
 ## Origin
 
