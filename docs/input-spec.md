@@ -353,8 +353,14 @@ as built-in modules of constants, `lib/vocab/ru.js` and `lib/vocab/en.js`,
 selected by the config key `language` (`"ru"` or `"en"`; absent means
 `"ru"`, so the ai-advent example is unchanged; any other value is a
 config finding). `markdown.js`, `extract.js`, `fired.js` and `vault.js`
-take the selected module as an argument. Values are regex sources, matched
-case-sensitively as written; changing a value is a format change. Keys:
+take the selected module as an argument. Values are regex sources; changing
+a value is a format change.
+
+Case follows the code and differs by key: `status.*` (`statusTag` in
+`lib/vault.js`) and `fired.marks` / `fired.negations` (`word()` in
+`lib/fired.js`) are matched **case-insensitively**; `sections.*`
+(`section()`), `labels.*` (`labeledParagraph()`), `replaces`, `replacedBy`
+and `placeholder` are matched **literally as written**. Keys:
 
 | Key | `ru` | `en` | Used by |
 |---|---|---|---|
@@ -364,7 +370,7 @@ case-sensitively as written; changing a value is a format change. Keys:
 | `labels.owns`, `labels.never` | `Владеет`, `Никогда` | `Owns`, `Never` | role facts |
 | `replaces`, `replacedBy` | `Заменяет`, `Заменено\s+на` | `Supersedes`, `Superseded\s+by` | `replaces` edges |
 | `status.accepted/proposed/rejected/superseded` | `Принято`, `Предложено`, `Отклонено`, `Заменено` | `Accepted`, `Proposed`, `Rejected`, `Superseded` | vault tags |
-| `placeholder` | `имя` | `name` | template placeholder detection |
+| `placeholder` | `имя` | not set (the key is optional) | template placeholder detection |
 | `fired.marks` | `вето`, `блокирующ[а-яё]*`, `находк[а-яё]*`, `правки`, `переделать` | `veto(?:ed)?`, `blocking`, `findings?`, `changes\s+requested`, `request(?:ed)?\s+changes`, `rework` | gate traces |
 | `fired.negations` | `нет`, `без\s+(?:вето\|находок\|блокирующих\|правок\|переделки)`, `не\s+(?:ставил\|наложил\|дал)` | `no`, `none`, `without\s+(?:a\s+)?(?:veto\|findings\|blockers\|changes\|rework)`, `(?:did\|does)\s+not\s+(?:veto\|block\|request\|find)` | gate traces |
 
@@ -372,8 +378,14 @@ The `en` values follow the usual English ADR and change-log wording:
 Nygard's `Status` / `Context` and `Supersedes` / `Superseded by`; the
 review verdicts of this project's design-review rendered in English
 (`changes requested`, `rework`); `What was done` and `Task` as the history
-record headings. With `en`, `name.md` in §5.3 is the same rule as `имя.md`
-under `ru`.
+record headings.
+
+`placeholder` is optional, and `en` deliberately does not set it. The word
+`name` would add `\bname\b` to the template-placeholder rule, and ordinary
+citations would silently stop being citations: `` `guides/name-format.md` ``
+or ADR `` `2026-01-01-0000-name-service.md` ``. The literal `name.md` of
+§5.3 is part of that rule regardless of the vocabulary, so the `имя.md`
+case under `ru` is covered for `en` without the key.
 
 Independent of `language`, the following stay Russian in format 1 and are
 not part of the input contract: vault note bodies (the fixed text around
