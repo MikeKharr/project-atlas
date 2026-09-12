@@ -3,7 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { MARKER, UsageError, pageHtml, parseArgs, readProvenance, run } from '../build.js'
+import { MARKER, UsageError, format, pageHtml, parseArgs, readProvenance, run } from '../build.js'
 import { FIXTURE, FIXTURE_EN, PKG, TEMP, copyFixture, editConfig } from './helpers.js'
 
 // CLI и граница записи: docs/input-spec.md, §2 и §10, с правками ревью
@@ -216,6 +216,38 @@ test('под GitHub Actions находка — аннотация ::error с ф�
     fx.cleanup()
     rmSync(out, { recursive: true, force: true })
   }
+})
+
+/** Значение переменной на время проверки: тесты идут и под Actions, где она уже задана. */
+function withActions(value, check) {
+  const saved = process.env.GITHUB_ACTIONS
+  process.env.GITHUB_ACTIONS = value
+  try {
+    check()
+  } finally {
+    if (saved === undefined) delete process.env.GITHUB_ACTIONS
+    else process.env.GITHUB_ACTIONS = saved
+  }
+}
+
+test('аннотация Actions: спецсимволы команд экранированы', () => {
+  withActions('true', () => {
+    assert.equal(
+      format({ file: 'docs/a:b,c.md', line: 7, message: 'доля 100%, строка\r\nвторая' }),
+      '::error file=docs/a%3Ab%2Cc.md,line=7::доля 100%25, строка%0D%0Aвторая',
+    )
+    // `%` экранируется первым: последовательность из текста находки остаётся
+    // текстом, а не превращается в перевод строки.
+    assert.equal(format({ file: 'a.md', line: 1, message: '%0A' }), '::error file=a.md,line=1::%250A')
+    // Без спецсимволов строка прежняя.
+    assert.equal(format({ file: 'a.md', line: 2, message: 'просто' }), '::error file=a.md,line=2::просто')
+  })
+})
+
+test('вне Actions формат находки прежний, без экранирования', () => {
+  withActions('', () => {
+    assert.equal(format({ file: 'docs/a:b,c.md', line: 7, message: 'доля 100%, строка' }), 'docs/a:b,c.md:7: доля 100%, строка')
+  })
 })
 
 test('разбор аргументов', () => {
