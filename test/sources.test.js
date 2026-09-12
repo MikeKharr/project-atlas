@@ -126,7 +126,7 @@ test('вход, не названный в конфигурации, отсут�
     assert.deepEqual(src.findings, [])
     assert.deepEqual(src.design, [])
     assert.deepEqual(src.skills, [])
-    assert.deepEqual(src.days, [])
+    assert.deepEqual(src.units, [])
     assert.deepEqual(src.providers, [])
     assert.equal(src.composeText, '')
     assert.deepEqual(src.skillsLock, { skills: {} })

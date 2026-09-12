@@ -170,14 +170,14 @@ test('publishes между неизвестными внешними — нах�
   assert.match(found[0].message, /publishes/)
 })
 
-test('about: день без units и неизвестный документ — находки', () => {
-  const day = overlay((o) => {
-    o.about = { '2026-01-16-1200': { days: ['app9'], why: 'x' } }
+test('about: единица без units и неизвестный документ — находки', () => {
+  const unit = overlay((o) => {
+    o.about = { '2026-01-16-1200': { units: ['app9'], why: 'x' } }
   })
-  assert.equal(day.length, 1)
-  assert.match(day[0].message, /`app9`, которого нет в конфигурации: units не задан/)
+  assert.equal(unit.length, 1)
+  assert.match(unit[0].message, /`app9`, которой нет в конфигурации: units не задан/)
   const doc = overlay((o) => {
-    o.about = { '2099-01-01-0000': { days: [], why: 'x' } }
+    o.about = { '2099-01-01-0000': { units: [], why: 'x' } }
   })
   assert.equal(doc.length, 1)
   assert.match(doc[0].message, /документ `2099-01-01-0000`, которого нет/)

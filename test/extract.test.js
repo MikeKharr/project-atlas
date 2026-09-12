@@ -207,10 +207,10 @@ test('деплой: находок нет', () => {
 
 test('деплой: единицы по номеру, сервисы compose, статика, тома, внешние — по порядку', () => {
   assert.deepEqual(
-    dg.nodes.map((n) => n.id).filter((id) => /^(day|service|volume|external)\//.test(id)),
+    dg.nodes.map((n) => n.id).filter((id) => /^(unit|service|volume|external)\//.test(id)),
     [
-      'day/app1',
-      'day/app2',
+      'unit/app1',
+      'unit/app2',
       'service/gateway',
       'service/web',
       'service/public',
@@ -227,10 +227,10 @@ test('деплой: единицы по номеру, сервисы compose, с
 
 test('единица: название и дата с лендинга, маршрут, каталог, образ, окружение', () => {
   assert.deepEqual(
-    { ...node(dg, 'day/app1'), x: 0, y: 0, z: 0 },
+    { ...node(dg, 'unit/app1'), x: 0, y: 0, z: 0 },
     {
-      id: 'day/app1',
-      type: 'day',
+      id: 'unit/app1',
+      type: 'unit',
       key: 'app1',
       title: 'Первое приложение',
       date: '01.02',
@@ -262,39 +262,39 @@ test('единица: название и дата с лендинга, марш
 
 test('depends и mounts — внутри каждого сервиса в порядке compose', () => {
   assert.deepEqual(dg.edges.filter((e) => e.kind === 'depends' || e.kind === 'mounts').map(line), [
-    'depends day/app1 → service/gateway',
-    'mounts day/app1 → volume/app1_data',
-    'depends day/app2 → service/gateway',
+    'depends unit/app1 → service/gateway',
+    'mounts unit/app1 → volume/app1_data',
+    'depends unit/app2 → service/gateway',
     'mounts service/gateway → volume/gateway_data',
-    'depends service/web → day/app1',
-    'depends service/web → day/app2',
+    'depends service/web → unit/app1',
+    'depends service/web → unit/app2',
     'mounts service/web → volume/web_data',
   ])
 })
 
 test('маршруты прокси — действующие handle_path; комментарий маршрутом не считается', () => {
   assert.deepEqual(kind(dg, 'routes').map(line), [
-    'routes service/web → day/app1',
-    'routes service/web → day/app2',
+    'routes service/web → unit/app1',
+    'routes service/web → unit/app2',
     'routes service/web → service/gateway',
   ])
-  assert.equal(node(dg, 'day/app2').route, '/app2/')
+  assert.equal(node(dg, 'unit/app2').route, '/app2/')
 })
 
 test('префикс handle_path не протекает в следующий блок `handle /x/*`', () => {
   const caddyText = dsources.caddyText.replace('handle_path /app2/* {', 'handle /app2/* {')
   assert.notEqual(caddyText, dsources.caddyText)
   const g = buildGraph({ ...dsources, caddyText }, dconfig)
-  assert.equal(node(g, 'day/app2').route, null, 'app2 получил префикс чужого блока')
-  assert.equal(node(g, 'day/app1').route, '/app1/')
-  assert.ok(g.edges.some((e) => e.kind === 'routes' && e.to === 'day/app2'), 'сервис за reverse_proxy — всё равно маршрут')
+  assert.equal(node(g, 'unit/app2').route, null, 'app2 получил префикс чужого блока')
+  assert.equal(node(g, 'unit/app1').route, '/app1/')
+  assert.ok(g.edges.some((e) => e.kind === 'routes' && e.to === 'unit/app2'), 'сервис за reverse_proxy — всё равно маршрут')
 })
 
 test('префикс handle_path не протекает в следующий блок `handle {`', () => {
   const caddyText = dsources.caddyText.replace('handle_path /app1/* {', 'handle {')
   const g = buildGraph({ ...dsources, caddyText }, dconfig)
-  assert.equal(node(g, 'day/app1').route, null)
-  assert.equal(node(g, 'day/app2').route, '/app2/')
+  assert.equal(node(g, 'unit/app1').route, null)
+  assert.equal(node(g, 'unit/app2').route, '/app2/')
 })
 
 test('два блока на один сервис дают одно ребро routes', () => {
@@ -312,8 +312,8 @@ test('прокси отдаёт статику, только если монти
 
 test('реестр образов: image от сервисов с префиксом, publishes из overlay', () => {
   assert.deepEqual(kind(dg, 'image').map(line), [
-    'image day/app1 → external/registry',
-    'image day/app2 → external/registry',
+    'image unit/app1 → external/registry',
+    'image unit/app2 → external/registry',
     'image service/gateway → external/registry',
   ])
   assert.deepEqual(kind(dg, 'publishes').map(line), ['publishes external/ci → external/registry'])
@@ -328,14 +328,35 @@ test('провайдеры: calls от сервиса провайдеров, а
 })
 
 test('calls из overlay: от единицы к внешнему', () => {
-  assert.ok(kind(dg, 'calls').some((e) => e.from === 'day/app1' && e.to === 'external/model-api'))
+  assert.ok(kind(dg, 'calls').some((e) => e.from === 'unit/app1' && e.to === 'external/model-api'))
 })
 
 test('about: имя единицы целым словом в имени файла; overlay перебивает', () => {
-  assert.deepEqual(kind(dg, 'about').map(line), ['about history/2026-01-20-0900 → day/app2'])
-  const overlay = { ...dsources.overlay, about: { '2026-01-20-0900': { days: ['app1'], why: 'проверка' } } }
+  assert.deepEqual(kind(dg, 'about').map(line), ['about history/2026-01-20-0900 → unit/app2'])
+  const overlay = { ...dsources.overlay, about: { '2026-01-20-0900': { units: ['app1'], why: 'проверка' } } }
   const g = buildGraph({ ...dsources, overlay, overlayText: JSON.stringify(overlay, null, 2) }, dconfig)
-  assert.deepEqual(kind(g, 'about').map(line), ['about history/2026-01-20-0900 → day/app1'])
+  assert.deepEqual(kind(g, 'about').map(line), ['about history/2026-01-20-0900 → unit/app1'])
+})
+
+test('about с ключом `days` формата 1 — находка о переименовании, привязки нет', () => {
+  const overlay = {
+    ...dsources.overlay,
+    about: {
+      '2026-01-16-1200': { days: ['app1'], why: 'формат 1' },
+      '2026-01-20-0900': { days: ['app2'], why: 'формат 1' },
+    },
+  }
+  const overlayText = JSON.stringify(overlay, null, 2)
+  const g = buildGraph({ ...dsources, overlay, overlayText }, dconfig)
+
+  const renamed = g.findings.filter((f) => f.message === 'в about ключ `days` переименован в `units` (формат 2)')
+  assert.equal(renamed.length, 2, JSON.stringify(g.findings))
+  // Каждая находка — по адресу своей записи, а не первой попавшейся.
+  assert.notEqual(renamed[0].line, renamed[1].line, 'обе находки показывают на одну строку')
+  for (const finding of renamed) assert.match(overlayText.split('\n')[finding.line - 1], /"days"/)
+
+  // Старый ключ не читается: привязка по имени файла тоже не подставляется.
+  assert.deepEqual(kind(g, 'about'), [])
 })
 
 test('находки §11.7: прокси и сервис провайдеров — сервисы compose, внешний реестра — в overlay', () => {
