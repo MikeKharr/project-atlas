@@ -177,4 +177,4 @@ Extracted from the `atlas/` package of
 commit `1d882f4`. The extraction plan is
 [`docs/extraction-plan.md`](docs/extraction-plan.md).
 
-No license has been chosen yet.
+MIT — see [LICENSE](LICENSE).

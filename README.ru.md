@@ -179,4 +179,4 @@ lib/vocab/ru.js  словарь соглашений документов
 коммите `1d882f4`. План выделения —
 [`docs/extraction-plan.md`](docs/extraction-plan.md).
 
-Лицензия пока не выбрана.
+MIT — см. [LICENSE](LICENSE).
