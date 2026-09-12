@@ -9,10 +9,10 @@ const example = loadConfig(EXAMPLE_CONFIG).config
 const minimal = loadConfig(join(FIXTURE, 'atlas.config.json')).config
 const { scanCitations, mapCitations } = makeGrammar(example)
 
-// Выражение цитат исходного пакета на 1d882f4 — дословно. Грамматика,
-// собранная из конфигурации примера, обязана совпасть с ним знак в знак:
-// иначе рёбра `cites` и ссылки vault разойдутся с исходным проектом.
-const CITE_1D882F4 = new RegExp(
+// Выражение цитат исходного пакета — дословно. Грамматика, собранная из
+// конфигурации примера, обязана совпасть с ним знак в знак: иначе рёбра
+// `cites` и ссылки vault разойдутся с исходным проектом.
+const CITE_SOURCE = new RegExp(
   [
     '(?<fence>^```[\\s\\S]*?^```)',
     '(?<dbl>``(?:[^`]|`(?!`))*``)',
@@ -27,7 +27,7 @@ const CITE_1D882F4 = new RegExp(
 )
 
 test('грамматика примера — дословно выражение исходного пакета', () => {
-  assert.equal(makeGrammar(example).source, CITE_1D882F4.source)
+  assert.equal(makeGrammar(example).source, CITE_SOURCE.source)
 })
 
 test('грамматика фикстуры: обе формы пути к ADR разрешаются, чужая коллекция — просто слово', () => {

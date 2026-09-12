@@ -7,7 +7,7 @@ project-atlas reads a repository by an explicit list of paths and builds a
 graph of its documents, rules, agents and deploy units: `graph.json` and
 `texts.json` for a static showcase page, plus a derived Obsidian vault. It is
 extracted from the `atlas/` package of `MikeKharr/ai-advent-2026`
-(source commit `1d882f4`); everything that was hard-wired to that repository
+(the source commit is named in this repository's first commit); everything that was hard-wired to that repository
 now comes from a **project configuration file** plus a **manual overlay**.
 
 This document is the contract for both files and for the outputs. The tool
@@ -145,7 +145,7 @@ The tool reads **only** the files and directories named by the
 configuration; directories are listed non-recursively, by file mask. Every
 read goes through a single guard that checks the path against the resolved
 list — the list is the intent, the guard is the guarantee (as in
-the source package at `1d882f4`). Tests keep a golden copy of the resolved list
+the source package). Tests keep a golden copy of the resolved list
 for the example configuration.
 
 Every read and every directory listing checks the path with `lstat`, one
@@ -327,8 +327,8 @@ and off" and "broken".
 ## 7. Manual overlay
 
 The only hand-written input: facts that exist in no machine-readable file.
-Format is the overlay already used by ai-advent-2026 (`atlas/overlay.json`
-at `1d882f4`), unchanged; the overlay has no format field. The `"_"` key is
+Format is the overlay already used by ai-advent-2026 (`atlas/overlay.json`),
+unchanged; the overlay has no format field. The `"_"` key is
 a free comment.
 
 ```jsonc
@@ -480,7 +480,7 @@ its text; whitespace collapsed; then masking (§9).
 
 ### 10.3 Vault
 
-As produced by `atlas/lib/vault.js` at `1d882f4`: frontmatter first, then
+As produced by the source package's `atlas/lib/vault.js`: frontmatter first, then
 the provenance comment block (source path, commit, commit time, read-only
 notice), then the body with citations rewritten to wikilinks. Every note is
 byte-equal to the source project's **up to the rename map** (§10.5: the
@@ -516,9 +516,10 @@ The tool's `package.json` version tracks releases; a format bump is a major
 version. The tool supports **one** format at a time — the current one.
 
 **Format 1** — this tool before `v2.0.0` (commit `0d9eab4`). Defined by byte
-equality with ai-advent-2026 at `1d882f4`: the same `graph.json` and
-`texts.json` as `node atlas/build.js` in that checkout. Numbered app units
-were the node type `day`.
+equality with the `atlas/` package of ai-advent-2026 before that repository
+migrated onto the tool: the same `graph.json` and `texts.json` as
+`node atlas/build.js` in that checkout. Numbered app units were the node type
+`day`.
 
 **Format 2** — since `v2.0.0`. The whole change is the rename `day` → `unit`:
 
@@ -539,9 +540,10 @@ Unchanged by the rename: the config block `units` (`dir`, `prefix`) and unit
 where "unit" is a fragment of the excerpt — a homonym, not a node type, and
 deliberately not renamed.
 
-Equality with format 1 is still checked: `test/compat.test.js` builds
-ai-advent at `1d882f4` with the old package and this tool with the example
-config, and compares them **up to the map above** (`test/rename-map.js`).
+Format 1 is history: the consumer migrated onto the tool, its old package is
+gone, and the equality check against it retired with it. What guards the output
+now is a checksum golden on the migrated consumer — `test/golden/ai-advent-2026.txt`
+and the `compat` job (see "Compatibility" in the README).
 
 ## 11. Findings and `--check`
 

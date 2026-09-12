@@ -8,7 +8,7 @@ import { readSources } from '../lib/sources.js'
 import { FIXTURE, FIXTURE_EN, addDeploy, copyFixture, density, editConfig } from './helpers.js'
 
 // Узлы и рёбра — docs/input-spec.md, §4. Числа живого проекта проверяет
-// тест совместимости (test/compat.test.js); здесь — правила на синтетике:
+// задача `compat` по test/golden/ai-advent-2026.txt; здесь — правила на синтетике:
 // минимальная фикстура и деплой поверх её копии.
 
 const load = (root) => loadConfig(join(root, 'atlas.config.json')).config

@@ -163,39 +163,35 @@ the same tool before `v2.0.0` — see "Format history" in
 [`docs/input-spec.md`](docs/input-spec.md) §10.5 for the full rename map and
 for what the two formats are.
 
-Equality with format 1 is still checked, up to that map.
-`test/compat.test.js` builds `MikeKharr/ai-advent-2026` at
-`1d882f40f8c37370b4dfbc3add650f10d1b11c1c` with its own old package, builds
-the same checkout with this tool and the example configuration, and compares
-the outputs through `test/rename-map.js` — the single implementation of the
-map, which also runs as a command:
+The output is pinned by checksums. `test/golden/ai-advent-2026.txt` holds three
+`sha256` sums — `graph.json`, `site/texts.json`, and the vault as a whole — for
+a build against `MikeKharr/ai-advent-2026`, the consumer this tool was
+extracted from, at the commit named in that file's header. The `compat` CI job
+checks out that commit and reproduces them:
 
 ```sh
-node test/rename-map.js <reference dist> <our out>
+cmp examples/ai-advent-2026/atlas.config.json reference/atlas/atlas.config.json
+node build.js --root reference --config reference/atlas/atlas.config.json --out temp/golden
 ```
 
-Beyond the map, `site/` and `vault/` differ only in four named files:
+The `cmp` is part of the check: the example configuration in this repository
+must stay byte-equal to the consumer's own `atlas/atlas.config.json`, or the
+example is lying about the project it claims to describe. The job runs under
+`TZ=UTC` — commit times are formatted in local time, so the sums reproduce only
+in a fixed timezone. On a mismatch the job prints node and edge counts by type,
+so the shape of the drift is visible in the log.
 
-| File | Difference |
-|---|---|
-| `site/index.html` | the `<meta name="atlas-…">` tags, and «дней» → «приложений» in a comment |
-| `site/app.js` | no project constants; generic footer wording |
-| `vault/index.md` | `ИСТОЧНИК: build.js` instead of `atlas/build.js`; the sections list says `units/` |
-| `vault/skills/skill-inspector.md` | the vendor set is taken from the skills lock file |
-
-The test is skipped unless `ATLAS_REFERENCE_ROOT` points at a clean checkout of
-that commit; the `compat` CI job provides one. It checks that checkout by
-content — no `assume-unchanged` bit, overlay equal to `HEAD` — before building
-and again afterwards, because it rewrites the overlay's `about` key to the
-format-2 `units` for the duration of the run and restores it in `finally`.
-Both builds must run in the same timezone: commit times are formatted in
-local time.
+**Regeneration rule.** A change that alters the output bytes is not something to
+work around: the same PR regenerates `test/golden/ai-advent-2026.txt` with the
+commands above and says in its description why the output changed. A golden
+regenerated without a stated reason is a review finding — the file earns its
+keep only by making an unintended change loud.
 
 ## Origin
 
 Extracted from the `atlas/` package of
-[`MikeKharr/ai-advent-2026`](https://github.com/MikeKharr/ai-advent-2026) at
-commit `1d882f4`. The extraction plan is
-[`docs/extraction-plan.md`](docs/extraction-plan.md).
+[`MikeKharr/ai-advent-2026`](https://github.com/MikeKharr/ai-advent-2026); the
+source commit is named in this repository's first commit. The extraction plan
+is [`docs/extraction-plan.md`](docs/extraction-plan.md).
 
 MIT — see [LICENSE](LICENSE).

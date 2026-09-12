@@ -113,8 +113,8 @@ lives only in the owner's working copy and is not in git.
   - Files: one test file. Size S.
 
 - [ ] **R6. `test/rename-map.js` and `test/compat.test.js` — equality up
-  to the map.** The reference stays `1d882f4` (immutable; the old package
-  inside it still builds).
+  to the map.** The reference stays the pre-migration source commit
+  (immutable; the old package inside it still builds).
 
   `test/rename-map.js` is the single implementation of the map: it exports
   `normalizeGraph(text)` (parse; map `nodes[].id`, `nodes[].type`,
@@ -148,7 +148,7 @@ lives only in the owner's working copy and is not in git.
   same two content checks again. Comparison via `compareOutputs`, keeping
   the four existing `EXCEPTIONS` for `site/index.html`, `site/app.js`,
   `vault/index.md`, `vault/skills/skill-inspector.md`.
-  - Acceptance: `ATLAS_REFERENCE_ROOT=<clean 1d882f4 checkout> node --test test/compat.test.js` — green locally and in the `compat` job; after a run, and after a deliberately failed run, both content checks pass on the checkout; with `assume-unchanged` left set by hand, the test fails **before** building and names the repair; `node test/rename-map.js` on two identical outputs exits 0 and on a one-tag difference in a vault note exits 1 naming the file.
+  - Acceptance: `ATLAS_REFERENCE_ROOT=<clean pre-migration checkout> node --test test/compat.test.js` — green locally and in the `compat` job; after a run, and after a deliberately failed run, both content checks pass on the checkout; with `assume-unchanged` left set by hand, the test fails **before** building and names the repair; `node test/rename-map.js` on two identical outputs exits 0 and on a one-tag difference in a vault note exits 1 naming the file.
   - Files: `test/rename-map.js`, `test/compat.test.js`. Size S.
 
 - [ ] **R7. `node build.js --samples`.** Prints the regex sources of
@@ -171,12 +171,12 @@ lives only in the owner's working copy and is not in git.
   units); §7 overlay `units` and the `days` finding; §10 vault dirs
   `units`; §11 class 6 wording; §13 «including `unit`»; new section
   **Format history**: format 1 = this tool before `v2.0.0` (commit
-  `0d9eab4`), defined by byte equality with ai-advent `1d882f4`; format 2
+  `0d9eab4`), defined by byte equality with pre-migration ai-advent; format 2
   = the rename map above, and the `marks.unit` homonym. `README.md`,
   `README.ru.md`: "Compatibility" section describes the format-2 compat
   (P1) and points to Format history. `examples/ai-advent-2026/README.md`:
   the example is the consumer's `atlas/atlas.config.json` after its
-  migration; the `1d882f4` run instructions move to the compat section
+  migration; the pre-migration run instructions move to the compat section
   and note the overlay key rewrite. `package.json` → `2.0.0`.
   - Acceptance: every command in the READMEs runs as written;
     `grep -rn "day/" docs/input-spec.md README*.md examples/` shows only
@@ -222,7 +222,7 @@ lives only in the owner's working copy and is not in git.
     in `lib/extract.js` output makes it red.
   - Files: `.github/workflows/ci.yml`. Size S.
 
-- [ ] **G3. Retire the `1d882f4` reference.** Delete `test/compat.test.js`
+- [ ] **G3. Retire the pre-migration reference.** Delete `test/compat.test.js`
   and `test/rename-map.js`; `README.md` / `README.ru.md` "Compatibility"
   describes the golden job and the regeneration rule: a PR that changes
   output bytes regenerates G1 in the same PR and says why.
@@ -230,7 +230,7 @@ lives only in the owner's working copy and is not in git.
 
 ### Checkpoint P2
 
-- [ ] `compat` green with the golden content; the `1d882f4` checkout is no longer referenced anywhere.
+- [ ] `compat` green with the golden content; the pre-migration checkout is no longer referenced anywhere.
 
 ## Risks
 

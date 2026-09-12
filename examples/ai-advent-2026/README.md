@@ -24,29 +24,22 @@ node build.js --root temp/reference --config examples/ai-advent-2026/atlas.confi
 The output lands in `temp/ai-advent/` (`graph.json`, `site/`, `vault/`).
 Nothing is written into the checkout.
 
-At the pinned commit `1d882f40f8c37370b4dfbc3add650f10d1b11c1c` that same
-command exits 1 and writes nothing. That tree predates the migration: its
-`atlas/overlay.json` still carries the format-1 key `about.<doc>.days`, and
-the tool says so instead of guessing:
+On a tree that predates the migration the same command exits 1 and writes
+nothing: such a tree's `atlas/overlay.json` still carries the format-1 key
+`about.<doc>.days`, and the tool says so instead of guessing:
 
 ```text
 atlas/overlay.json:125: в about ключ `days` переименован в `units` (формат 2)
 ```
 
-That is the tool working, not a defect — the finding names the edit the
-consumer has to make. To build that commit anyway, use the compatibility
-test below: it rewrites the key for the duration of the run and restores it
-in `finally`.
+That is the tool working, not a defect — the finding names the edit a consumer
+still on format 1 has to make.
 
-## Compare with the source package
+## Pinned output
 
-```sh
-ATLAS_REFERENCE_ROOT=temp/reference node --test test/compat.test.js
-```
-
-The test requires a clean checkout at that exact commit. It runs the
-reference build (which writes only the ignored `atlas/dist/` of the checkout),
-rewrites the overlay key to `units` in place for the duration of the run, and
-compares the outputs **up to the rename map** — see "Compatibility" in the
-main [README](../../README.md). It checks the checkout's cleanliness by
-content before and after, and restores the overlay in `finally`.
+The `compat` CI job builds this example against a pinned commit of the consumer
+and compares three `sha256` sums with `test/golden/ai-advent-2026.txt`. The same
+job checks with `cmp` that this file is byte-equal to the consumer's own
+`atlas/atlas.config.json`: a drift between them is a failed job, not a surprise
+at build time. See "Compatibility" in the main [README](../../README.md) for the
+commands and for the rule on regenerating the golden.

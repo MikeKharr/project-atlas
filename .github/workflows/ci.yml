@@ -49,21 +49,56 @@ jobs:
 
   compat:
     runs-on: ubuntu-latest
+    # Время коммитов форматируется в местном поясе: без фиксированного TZ
+    # контрольные суммы не воспроизводятся.
+    env:
+      TZ: UTC
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      # Эталон формата 1: исходный пакет atlas/ на зафиксированном коммите.
+      # Потребитель инструмента на зафиксированном коммите: выход на нём
+      # закреплён суммами в test/golden/ai-advent-2026.txt.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: MikeKharr/ai-advent-2026
-          ref: 1d882f40f8c37370b4dfbc3add650f10d1b11c1c
+          ref: d0cc8e4c7f405f6f250e5f65094dbd6e8441b4f7
           path: reference
           persist-credentials: false
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: '22' }
 
-      - name: Совместимость с исходным пакетом (формат 1)
-        env:
-          ATLAS_REFERENCE_ROOT: reference
-        run: node --test test/compat.test.js
+      # Пример в репозитории — копия конфигурации потребителя. Разошлись —
+      # пример врёт, и дальше сверять уже нечего.
+      - name: Пример конфигурации совпадает с конфигурацией потребителя
+        run: cmp examples/ai-advent-2026/atlas.config.json reference/atlas/atlas.config.json
+
+      - name: Сборка потребителя
+        run: node build.js --root reference --config reference/atlas/atlas.config.json --out temp/golden
+
+      - name: Выход совпадает с golden
+        run: |
+          sum() { sha256sum "$1" | cut -d' ' -f1; }
+          {
+            echo "$(sum temp/golden/graph.json)  graph.json"
+            echo "$(sum temp/golden/site/texts.json)  site/texts.json"
+            echo "$( (cd temp/golden/vault && find . -type f | LC_ALL=C sort | xargs sha256sum) | sha256sum | cut -d' ' -f1 )  vault"
+          } > temp/actual.txt
+          grep -v -e '^#' -e '^$' test/golden/ai-advent-2026.txt > temp/expected.txt
+          if diff -u temp/expected.txt temp/actual.txt; then
+            echo "ok: выход совпал с golden"
+            exit 0
+          fi
+          echo "::error::выход разошёлся с test/golden/ai-advent-2026.txt; если расхождение намеренное — перевыпустите файл в этом же PR и назовите причину"
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs"
+            const g = JSON.parse(readFileSync("temp/golden/graph.json", "utf8"))
+            const by = (items, key) => {
+              const n = {}
+              for (const it of items) n[it[key]] = (n[it[key]] || 0) + 1
+              return Object.keys(n).sort().map(k => k + " " + n[k]).join(", ")
+            }
+            console.log("узлов " + g.nodes.length + ": " + by(g.nodes, "type"))
+            console.log("рёбер " + g.edges.length + ": " + by(g.edges, "kind"))
+          '
+          exit 1
