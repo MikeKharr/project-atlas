@@ -459,7 +459,7 @@ and every `vault/<collection dir>`; a symbolic link among them is a refusal
 with exit 2 — nothing deleted, nothing written. Every write goes only into
 a directory whose `realpath` lies under `realpath(<out>)`; a marker inside
 the root never lets a write escape `<out>`. Size limits are
-built-in and not configurable: `texts.json` 3072 KiB, `graph.json`
+built-in and not configurable: `texts.json` 6144 KiB, `graph.json`
 1024 KiB, page code 256 KiB; exceeding one is a finding.
 
 ### 10.1 `graph.json`

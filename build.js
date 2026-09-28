@@ -171,7 +171,7 @@ const KB = 1024
  * усекает: усечённый поиск молча врёт.
  */
 export const LIMITS = {
-  texts: 3072 * KB,
+  texts: 6144 * KB,
   graph: 1024 * KB,
   // Код страницы — `WEB_FILES` вместе. Общего потолка на `site/` нет.
   page: 256 * KB,

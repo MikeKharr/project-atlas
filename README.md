@@ -137,7 +137,7 @@ the time is the commit time, not "now".
 
 ### Size limits
 
-`texts.json` 3072 KiB, `graph.json` 1024 KiB, page code 256 KiB (`LIMITS` in
+`texts.json` 6144 KiB, `graph.json` 1024 KiB, page code 256 KiB (`LIMITS` in
 `build.js`). Exceeding one is a finding; nothing is truncated.
 
 ## Code

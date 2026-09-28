@@ -197,7 +197,7 @@ test('скрытые места посчитаны по узлам', () => {
 // --- потолки: синтетические размеры, живой граф не нужен ----------------------
 
 test('потолки в байтах: КБ — 1024 байта', () => {
-  assert.equal(LIMITS.texts, 3072 * 1024)
+  assert.equal(LIMITS.texts, 6144 * 1024)
   assert.equal(LIMITS.graph, 1024 * 1024)
   assert.equal(LIMITS.page, 256 * 1024)
 })
@@ -212,7 +212,7 @@ test('texts.json на байт больше потолка — находка с
   assert.equal(found[0].file, 'build.js')
   assert.match(found[0].message, /texts\.json/)
   assert.match(found[0].message, /потол/)
-  assert.match(found[0].message, /3072 КБ/)
+  assert.match(found[0].message, /6144 КБ/)
 })
 
 test('graph.json на байт больше потолка — находка', () => {
